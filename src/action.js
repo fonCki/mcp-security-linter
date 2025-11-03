@@ -11,6 +11,9 @@ async function run() {
     const failOnWarnings = (process.env['INPUT_FAIL-ON-WARNINGS'] || core.getInput('fail-on-warnings')) === 'true';
     const outputFormat = process.env['INPUT_OUTPUT-FORMAT'] || core.getInput('output-format') || 'sarif';
 
+    console.log('DEBUG: failOnWarnings =', failOnWarnings);
+    console.log('DEBUG: INPUT_FAIL-ON-WARNINGS =', process.env['INPUT_FAIL-ON-WARNINGS']);
+
     let config = {};
     if (fs.existsSync(configPath)) {
       const configContent = fs.readFileSync(configPath, 'utf8');

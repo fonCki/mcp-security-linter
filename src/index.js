@@ -59,7 +59,13 @@ class MCPSecurityLinter {
 
     const pattern = path.join(targetPath, '**/*.{js,ts,jsx,tsx,py,java,go,rb}');
     return glob.sync(pattern, {
-      ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**']
+      ignore: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/.git/**',
+        '**/tests/fixtures/**',
+        '**/test/fixtures/**'
+      ]
     });
   }
 }

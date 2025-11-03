@@ -51,6 +51,12 @@ class AIDetector extends BaseAnalyzer {
 
   shouldAnalyze(filePath) {
     const ext = path.extname(filePath);
+
+    // Skip test files
+    if (filePath.includes('.test.') || filePath.includes('.spec.') || filePath.includes('__tests__')) {
+      return false;
+    }
+
     return this.extensions.includes(ext);
   }
 }

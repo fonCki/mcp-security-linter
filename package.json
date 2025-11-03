@@ -18,7 +18,12 @@
     "security",
     "linter",
     "static-analysis",
-    "github-action"
+    "github-action",
+    "model-context-protocol",
+    "ai-detection",
+    "security-scanner",
+    "code-analysis",
+    "vulnerability-scanner"
   ],
   "author": "Melissa Safari, Zachary Kang, Alfonso Pedro Ridao",
   "contributors": [
@@ -51,6 +56,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/alfonsoridao/mcp-security-linter"
-  }
+    "url": "https://github.com/fonCki/mcp-security-linter"
+  },
+  "homepage": "https://github.com/fonCki/mcp-security-linter#readme",
+  "bugs": {
+    "url": "https://github.com/fonCki/mcp-security-linter/issues"
+  },
+  "files": [
+    "src/",
+    "defaults.json",
+    "CONFIGURATION.md",
+    "README.md",
+    "LICENSE"
+  ]
 }

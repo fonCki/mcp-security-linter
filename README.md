@@ -22,15 +22,25 @@ Static analysis tool for Model Context Protocol (MCP) repository security vulner
 
 ### As a GitHub Action (Recommended)
 
-Add to your workflow:
+#### Step 1: Create the workflow directory
+
+In your repository, create the directory structure (if it doesn't exist):
+
+```bash
+mkdir -p .github/workflows
+```
+
+#### Step 2: Create a workflow file
+
+Create a new file `.github/workflows/mcp-security.yml` (you can name it anything ending in `.yml`):
 
 ```yaml
-name: Security Check
+name: MCP Security Check
 
 on: [push, pull_request]
 
 jobs:
-  lint:
+  security-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -39,6 +49,16 @@ jobs:
           path: '.'
           fail-on-warnings: true
 ```
+
+#### Step 3: Commit and push
+
+```bash
+git add .github/workflows/mcp-security.yml
+git commit -m "Add MCP security linter workflow"
+git push
+```
+
+The action will now run automatically on every push and pull request!
 
 ### Local Development
 

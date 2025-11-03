@@ -31,7 +31,7 @@ jobs:
         id: lint
         run: npm run action
         env:
-          INPUT_FAIL-ON-WARNINGS: 'true'
+          INPUT_FAIL_ON_WARNINGS: 'true'
 
       - name: Upload SARIF results
         if: always()

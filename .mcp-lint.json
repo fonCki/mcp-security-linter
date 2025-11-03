@@ -2,25 +2,5 @@
   "ai-detector": {
     "enabled": true,
     "severity": "warning"
-  },
-  "command-injection": {
-    "enabled": true,
-    "severity": "error"
-  },
-  "token-passthrough": {
-    "enabled": true,
-    "severity": "error"
-  },
-  "unauthenticated-endpoints": {
-    "enabled": true,
-    "severity": "error"
-  },
-  "oauth-hygiene": {
-    "enabled": true,
-    "severity": "warning"
-  },
-  "argument-validation": {
-    "enabled": true,
-    "severity": "warning"
   }
 }

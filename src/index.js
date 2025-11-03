@@ -11,12 +11,7 @@ class MCPSecurityLinter {
 
   loadAnalyzers() {
     const analyzerFiles = [
-      'ai-detector',
-      'command-injection',
-      'token-passthrough',
-      'unauthenticated-endpoints',
-      'oauth-hygiene',
-      'argument-validation'
+      'ai-detector'
     ];
 
     analyzerFiles.forEach(file => {

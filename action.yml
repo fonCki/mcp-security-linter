@@ -1,6 +1,6 @@
 name: 'MCP Security Linter'
 description: 'Static analysis tool for Model Context Protocol (MCP) repository security vulnerabilities'
-author: 'Alfonso Pedro Ridao'
+author: 'fonCki'
 
 inputs:
   path:

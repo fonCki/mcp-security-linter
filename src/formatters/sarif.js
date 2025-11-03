@@ -1,3 +1,6 @@
+const packageJson = require('../../package.json');
+const defaultConfig = require('../../defaults.json');
+
 function format(findings) {
   const sarif = {
     version: '2.1.0',
@@ -5,9 +8,9 @@ function format(findings) {
       {
         tool: {
           driver: {
-            name: 'MCP Security Linter',
-            version: '0.1.0',
-            informationUri: 'https://github.com/alfonsoridao/mcp-security-linter',
+            name: defaultConfig.output.sarif.toolName,
+            version: packageJson.version,
+            informationUri: defaultConfig.output.sarif.informationUri,
             rules: getRules(findings)
           }
         },

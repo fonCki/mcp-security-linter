@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Example custom configuration showing new flexibility",
+
+  "global": {
+    "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb", ".php", ".cpp"],
+    "testFilePatterns": [".test.", ".spec.", "__tests__", "/__test__/", "/spec/"],
+    "excludePatterns": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.git/**",
+      "**/vendor/**"
+    ]
+  },
+
+  "analyzers": {
+    "ai-detector": {
+      "enabled": true,
+      "severity": "warning",
+      "customPatterns": []
+    }
+  }
+}

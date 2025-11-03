@@ -2,23 +2,69 @@ const fs = require('fs');
 const path = require('path');
 const glob = require('glob');
 
+
+const DEFAULT_CONFIG = require('../defaults.json');
+
 class MCPSecurityLinter {
   constructor(config = {}) {
     this.analyzers = [];
-    this.config = config;
+    this.config = this.mergeConfig(config);
     this.loadAnalyzers();
   }
 
+  mergeConfig(userConfig) {
+    const merged = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
+    if (userConfig.global) {
+      merged.global = { ...merged.global, ...userConfig.global };
+    }
+
+    if (userConfig.analyzers) {
+      Object.keys(userConfig.analyzers).forEach(key => {
+        if (merged.analyzers[key]) {
+          merged.analyzers[key] = { ...merged.analyzers[key], ...userConfig.analyzers[key] };
+        } else {
+          merged.analyzers[key] = userConfig.analyzers[key];
+        }
+      });
+    }
+
+    Object.keys(DEFAULT_CONFIG.analyzers).forEach(analyzerKey => {
+      if (userConfig[analyzerKey]) {
+        merged.analyzers[analyzerKey] = {
+          ...merged.analyzers[analyzerKey],
+          ...userConfig[analyzerKey]
+        };
+      }
+    });
+
+    if (userConfig.output) {
+      merged.output = { ...merged.output, ...userConfig.output };
+    }
+
+    return merged;
+  }
+
   loadAnalyzers() {
-    const analyzerFiles = [
-      'ai-detector'
-    ];
+    const analyzerDir = path.join(__dirname, 'analyzers');
+    const analyzerFiles = fs.readdirSync(analyzerDir)
+      .filter(file => file.endsWith('.js') && file !== 'base-analyzer.js')
+      .map(file => file.replace('.js', ''));
 
     analyzerFiles.forEach(file => {
-      const AnalyzerClass = require(`./analyzers/${file}`);
-      const analyzer = new AnalyzerClass(this.config[file] || {});
-      if (analyzer.enabled !== false) {
-        this.analyzers.push(analyzer);
+      try {
+        const AnalyzerClass = require(`./analyzers/${file}`);
+        const analyzerConfig = this.config.analyzers[file] || {};
+        const globalConfig = this.config.global || {};
+        const analyzer = new AnalyzerClass({
+          ...analyzerConfig,
+          globalConfig
+        });
+        if (analyzer.enabled !== false) {
+          this.analyzers.push(analyzer);
+        }
+      } catch (error) {
+        console.warn(`Warning: Could not load analyzer ${file}:`, error.message);
       }
     });
   }
@@ -52,15 +98,13 @@ class MCPSecurityLinter {
       return [targetPath];
     }
 
-    const pattern = path.join(targetPath, '**/*.{js,ts,jsx,tsx,py,java,go,rb}');
+    const extensions = this.config.global.fileExtensions
+      .map(ext => ext.replace('.', ''))
+      .join(',');
+    const pattern = path.join(targetPath, `**/*.{${extensions}}`);
+
     return glob.sync(pattern, {
-      ignore: [
-        '**/node_modules/**',
-        '**/dist/**',
-        '**/.git/**',
-        '**/tests/fixtures/**',
-        '**/test/fixtures/**'
-      ]
+      ignore: this.config.global.excludePatterns
     });
   }
 }

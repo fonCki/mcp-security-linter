@@ -84,6 +84,8 @@ node src/cli.js --config .mcp-lint.json   # Use custom config
 
 ### Configuration
 
+**v1.1.0+** introduces advanced configuration options. See **[CONFIGURATION.md](CONFIGURATION.md)** for the complete guide.
+
 Create `.mcp-lint.json` (optional):
 
 ```json
@@ -91,19 +93,19 @@ Create `.mcp-lint.json` (optional):
   "ai-detector": {
     "enabled": true,
     "severity": "warning"
-  },
-  "command-injection": {
-    "enabled": false,
-    "severity": "error"
-  },
-  "token-passthrough": {
-    "enabled": false,
-    "severity": "error"
   }
 }
 ```
 
-**Configuration Options:**
+**Advanced Configuration (v1.1.0+):**
+- 📁 Custom file extensions (scan any language)
+- 🧪 Custom test patterns (skip test files)
+- 🚫 Custom exclude patterns (ignore directories)
+- ⚙️ Analyzer-specific overrides
+
+See **[CONFIGURATION.md](CONFIGURATION.md)** for examples and detailed documentation.
+
+**Basic Options:**
 - `enabled`: Enable/disable the analyzer (default: true for ai-detector, false for stubs)
 - `severity`: Set severity level: "error", "warning", or "info" (default: "warning")
 

@@ -1,6 +1,8 @@
 const BaseAnalyzer = require('./base-analyzer');
 const path = require('path');
 
+const NAME = 'ai-detector';
+
 const AI_PATTERNS = [
   /\bchatgpt\b/gi,
   /\bopenai\b/gi,
@@ -15,11 +17,14 @@ const AI_PATTERNS = [
 
 class AIDetector extends BaseAnalyzer {
   constructor(options = {}) {
-    super('ai-detector', options);
+    super(NAME, options);
     this.patterns = options.customPatterns ?
       [...AI_PATTERNS, ...options.customPatterns] :
       AI_PATTERNS;
-    this.extensions = options.extensions || ['.js', '.ts', '.jsx', '.tsx', '.py', '.java'];
+
+    const globalConfig = options.globalConfig || {};
+    this.extensions = options.fileExtensions || globalConfig.fileExtensions || ['.js', '.ts', '.jsx', '.tsx', '.py', '.java'];
+    this.testPatterns = options.testFilePatterns || globalConfig.testFilePatterns || ['.test.', '.spec.', '__tests__'];
   }
 
   analyze(filePath, content) {
@@ -53,7 +58,7 @@ class AIDetector extends BaseAnalyzer {
     const ext = path.extname(filePath);
 
     // Skip test files
-    if (filePath.includes('.test.') || filePath.includes('.spec.') || filePath.includes('__tests__')) {
+    if (this.testPatterns.some(pattern => filePath.includes(pattern))) {
       return false;
     }
 

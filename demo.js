@@ -8,7 +8,11 @@ async function runDemo() {
   console.log('Analyzing test fixtures for AI-generated content...\n');
 
   const linter = new MCPSecurityLinter({
-    'ai-detector': { enabled: true, severity: 'warning' }
+    'ai-detector': {
+      enabled: true,
+      severity: 'warning',
+      testFilePatterns: []
+    }
   });
 
   const vulnerableFile = './tests/fixtures/sample-vulnerable.js';

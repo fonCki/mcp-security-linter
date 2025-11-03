@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Default configuration for MCP Security Linter v1.1.0",
+
+  "global": {
+    "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb"],
+    "excludePatterns": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.git/**",
+      "**/tests/fixtures/**",
+      "**/test/fixtures/**"
+    ],
+    "testFilePatterns": [".test.", ".spec.", "__tests__", "/tests/", "/test/"],
+    "defaultSeverity": "warning"
+  },
+
+  "analyzers": {
+    "ai-detector": {
+      "enabled": true,
+      "severity": "warning",
+      "fileExtensions": null,
+      "testFilePatterns": null
+    },
+    "command-injection": {
+      "enabled": false,
+      "severity": "error"
+    },
+    "token-passthrough": {
+      "enabled": false,
+      "severity": "error"
+    },
+    "unauthenticated-endpoints": {
+      "enabled": false,
+      "severity": "error"
+    },
+    "oauth-hygiene": {
+      "enabled": false,
+      "severity": "warning"
+    },
+    "argument-validation": {
+      "enabled": false,
+      "severity": "error"
+    }
+  },
+
+  "output": {
+    "formats": ["console", "json", "sarif"],
+    "defaultFormat": "console",
+    "sarif": {
+      "toolName": "MCP Security Linter",
+      "informationUri": "https://github.com/fonCki/mcp-security-linter"
+    }
+  }
+}

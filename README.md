@@ -24,7 +24,29 @@ Static analysis tool for Model Context Protocol (MCP) repository security vulner
 
 ## Installation
 
-### As a GitHub Action (Recommended)
+### From NPM (Recommended)
+
+Install globally to use the CLI anywhere:
+
+```bash
+npm install -g mcp-security-linter
+```
+
+Or add to your project as a dev dependency:
+
+```bash
+npm install --save-dev mcp-security-linter
+```
+
+Then run:
+
+```bash
+mcp-lint .                              # Scan current directory
+mcp-lint src/ --format json             # Scan src/ with JSON output
+mcp-lint --config custom-config.json    # Use custom config
+```
+
+### As a GitHub Action
 
 #### Step 1: Create the workflow directory
 
@@ -64,15 +86,17 @@ git push
 
 The action will now run automatically on every push and pull request!
 
-### Local Development
+### For Contributors
 
-Clone the repository and install dependencies:
+If you want to contribute to development:
 
 ```bash
 git clone https://github.com/fonCki/mcp-security-linter.git
 cd mcp-security-linter
 npm install
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ## Usage
 

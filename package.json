@@ -1,0 +1,56 @@
+{
+  "name": "mcp-security-linter",
+  "version": "0.1.0",
+  "description": "Static analysis tool for MCP repository security vulnerabilities",
+  "main": "src/index.js",
+  "bin": {
+    "mcp-lint": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "node src/cli.js",
+    "action": "node src/action.js"
+  },
+  "keywords": [
+    "mcp",
+    "security",
+    "linter",
+    "static-analysis",
+    "github-action"
+  ],
+  "author": "Melissa Safari, Zachary Kang, Alfonso Pedro Ridao",
+  "contributors": [
+    {
+      "name": "Melissa Safari",
+      "email": "s224818@dtu.dk"
+    },
+    {
+      "name": "Zachary Kang",
+      "email": "s251598@dtu.dk"
+    },
+    {
+      "name": "Alfonso Pedro Ridao",
+      "email": "s243942@dtu.dk"
+    }
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
+    "glob": "^10.3.10",
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alfonsoridao/mcp-security-linter"
+  }
+}

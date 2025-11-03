@@ -82,20 +82,6 @@ node src/cli.js --format sarif --output results.sarif  # SARIF output
 node src/cli.js --config .mcp-lint.json   # Use custom config
 ```
 
-### Using in Other Projects
-
-Until published to npm, you can use it via:
-
-```bash
-# Option 1: Use as GitHub Action (see above)
-
-# Option 2: Clone and run locally
-git clone https://github.com/fonCki/mcp-security-linter.git
-cd mcp-security-linter
-npm install
-node src/cli.js /path/to/your/project
-```
-
 ### Configuration
 
 Create `.mcp-lint.json` (optional):

@@ -13,29 +13,9 @@ Static analysis tool for Model Context Protocol (MCP) repository security vulner
 
 ## Installation
 
-```bash
-npm install mcp-security-linter
-```
+### As a GitHub Action (Recommended)
 
-## Usage
-
-### CLI
-
-```bash
-# Analyze current directory
-npx mcp-lint
-
-# Analyze specific path
-npx mcp-lint src/
-
-# Output SARIF format
-npx mcp-lint --format sarif --output results.sarif
-
-# Use custom config
-npx mcp-lint --config .mcp-lint.json
-```
-
-### GitHub Action
+Add to your workflow:
 
 ```yaml
 name: Security Check
@@ -47,10 +27,46 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: alfonsoridao/mcp-security-linter@v1
+      - uses: fonCki/mcp-security-linter@master
         with:
           path: '.'
           fail-on-warnings: true
+```
+
+### Local Development
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/fonCki/mcp-security-linter.git
+cd mcp-security-linter
+npm install
+```
+
+## Usage
+
+### CLI
+
+```bash
+# From the project directory
+node src/cli.js                           # Analyze current directory
+node src/cli.js src/                      # Analyze specific path
+node src/cli.js --format sarif --output results.sarif  # SARIF output
+node src/cli.js --config .mcp-lint.json   # Use custom config
+```
+
+### Using in Other Projects
+
+Until published to npm, you can use it via:
+
+```bash
+# Option 1: Use as GitHub Action (see above)
+
+# Option 2: Clone and run locally
+git clone https://github.com/fonCki/mcp-security-linter.git
+cd mcp-security-linter
+npm install
+node src/cli.js /path/to/your/project
 ```
 
 ### Configuration

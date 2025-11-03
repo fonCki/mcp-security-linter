@@ -1,7 +1,7 @@
 {
   "name": "mcp-security-linter",
   "version": "0.1.0",
-  "description": "Simple static analysis tool that detects AI-generated content in code repositories",
+  "description": "Static analysis tool for MCP repository security vulnerabilities",
   "main": "src/index.js",
   "bin": {
     "mcp-lint": "./src/cli.js"

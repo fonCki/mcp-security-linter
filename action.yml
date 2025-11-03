@@ -1,5 +1,5 @@
-name: 'AI Content Detector'
-description: 'Detects AI-generated content mentions in source code (ChatGPT, OpenAI, Claude, etc.)'
+name: 'MCP Security Linter'
+description: 'Static analysis tool for Model Context Protocol (MCP) repository security vulnerabilities'
 author: 'fonCki'
 
 inputs:

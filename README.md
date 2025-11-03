@@ -1,14 +1,22 @@
 # MCP Security Linter
 
-A simple static analysis tool that detects AI-generated content in code repositories.
+Static analysis tool for Model Context Protocol (MCP) repository security vulnerabilities.
 
 ## Features
 
-- **AI-Generated Content Detection**: Identifies mentions of AI tools in source code
+### Currently Implemented:
+- **AI-Generated Content Detection** ✅
   - Detects: ChatGPT, OpenAI, Claude, Anthropic, GPT-3/4, Copilot, Gemini, Bard
   - Automatically skips test files (*.test.js, *.spec.js)
   - Ignores test fixtures and node_modules
   - Configurable severity levels (warning/error/info)
+
+### Planned Analyzers:
+- Command injection detection (stub)
+- Token passthrough detection (stub)
+- Unauthenticated endpoints detection (stub)
+- OAuth hygiene checker (stub)
+- Argument validation (stub)
 
 ## Installation
 
@@ -77,13 +85,23 @@ Create `.mcp-lint.json` (optional):
   "ai-detector": {
     "enabled": true,
     "severity": "warning"
+  },
+  "command-injection": {
+    "enabled": false,
+    "severity": "error"
+  },
+  "token-passthrough": {
+    "enabled": false,
+    "severity": "error"
   }
 }
 ```
 
 **Configuration Options:**
-- `enabled`: Enable/disable the analyzer (default: true)
+- `enabled`: Enable/disable the analyzer (default: true for ai-detector, false for stubs)
 - `severity`: Set severity level: "error", "warning", or "info" (default: "warning")
+
+**Note:** Only `ai-detector` is currently implemented. Other analyzers are placeholders for future development.
 
 ## How It Works
 

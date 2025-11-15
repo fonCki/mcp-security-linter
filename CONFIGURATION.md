@@ -147,6 +147,34 @@ Each analyzer can be configured individually:
 }
 ```
 
+#### Command Exec Analyzer Specific Options
+
+- **`customExecPatterns`**: (Array of RegExp patterns) Additional command execution methods to detect
+- **`customDangerousCommands`**: (Array of pattern objects) Additional dangerous command patterns
+
+**Example:** Add custom dangerous patterns:
+```json
+{
+  "analyzers": {
+    "command-exec": {
+      "enabled": true,
+      "severity": "error",
+      "customDangerousCommands": [
+        {
+          "pattern": "sudo\\s+rm",
+          "description": "Privileged file deletion",
+          "severity": "error"
+        }
+      ],
+      "customExecPatterns": [
+        "\\bexecCommand\\s*\\(",
+        "\\brunShellScript\\s*\\("
+      ]
+    }
+  }
+}
+```
+
 ---
 
 ## Configuration Examples

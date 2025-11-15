@@ -1,6 +1,0 @@
-{
-  "ai-detector": {
-    "enabled": true,
-    "severity": "warning"
-  }
-}

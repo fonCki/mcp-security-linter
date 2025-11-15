@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const glob = require('glob');
 
-
 const DEFAULT_CONFIG = require('../defaults.json');
 
 class MCPSecurityLinter {
@@ -98,14 +97,39 @@ class MCPSecurityLinter {
       return [targetPath];
     }
 
+    const globOptions = {
+      ignore: this.config.global.excludePatterns,
+      dot: true  // Include dotfiles like .env
+    };
+
+    let files = [];
+
+    // Match files with extensions
     const extensions = this.config.global.fileExtensions
+      .filter(ext => ext.startsWith('.') && ext.length > 1)
       .map(ext => ext.replace('.', ''))
       .join(',');
-    const pattern = path.join(targetPath, `**/*.{${extensions}}`);
 
-    return glob.sync(pattern, {
-      ignore: this.config.global.excludePatterns
+    if (extensions) {
+      const extPattern = path.join(targetPath, `**/*.{${extensions}}`);
+      files = files.concat(glob.sync(extPattern, globOptions));
+    }
+
+    // Match specific filenames without extensions or with dot prefix
+    const specialFiles = [
+      'Dockerfile', 'dockerfile',
+      '.env', '.env.local', '.env.production', '.env.development', '.env.test',
+      '.gitignore', '.dockerignore',
+      'mcp-config.json', '.mcp-config.json'
+    ];
+
+    specialFiles.forEach(filename => {
+      const filePattern = path.join(targetPath, `**/${filename}`);
+      files = files.concat(glob.sync(filePattern, globOptions));
     });
+
+    // Remove duplicates and return
+    return [...new Set(files)];
   }
 }
 

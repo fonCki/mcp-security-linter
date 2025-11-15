@@ -3,13 +3,26 @@
   "description": "Default configuration for MCP Security Linter v1.1.0",
 
   "global": {
-    "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb"],
+    "fileExtensions": [
+      ".js", ".ts", ".jsx", ".tsx",
+      ".py", ".java", ".go", ".rb",
+      ".json",
+      ".env", ".env.example", ".env.local", ".env.production",
+      ".yml", ".yaml",
+      ".sh", ".bash", ".zsh",
+      ".dockerfile"
+    ],
     "excludePatterns": [
       "**/node_modules/**",
       "**/dist/**",
       "**/.git/**",
       "**/tests/fixtures/**",
-      "**/test/fixtures/**"
+      "**/test/fixtures/**",
+      "**/.vscode/**",
+      "**/.idea/**",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/pnpm-lock.yaml"
     ],
     "testFilePatterns": [".test.", ".spec.", "__tests__", "/tests/", "/test/"],
     "defaultSeverity": "warning"
@@ -22,9 +35,22 @@
       "fileExtensions": null,
       "testFilePatterns": null
     },
-    "command-injection": {
+    "command-exec": {
+      "enabled": true,
+      "severity": "error",
+      "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb", ".sh", ".bash", ".zsh", ".json"]
+    },
+    "config-file-scanner": {
       "enabled": false,
-      "severity": "error"
+      "severity": "error",
+      "fileExtensions": [".json", ".yml", ".yaml", ".env", ".env.example"],
+      "description": "Scans MCP config files for malicious startup commands"
+    },
+    "secret-detector": {
+      "enabled": false,
+      "severity": "error",
+      "fileExtensions": [".json", ".env", ".env.example", ".env.local", ".yml", ".yaml", ".js", ".ts", ".py"],
+      "description": "Detects hardcoded secrets (API keys, passwords, tokens)"
     },
     "token-passthrough": {
       "enabled": false,

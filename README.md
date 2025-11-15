@@ -9,6 +9,18 @@ Static analysis tool for Model Context Protocol (MCP) repository security vulner
 ## Features
 
 ### Currently Implemented:
+
+- **Dangerous Command Execution Detection** ✅
+  - Detects unsafe `exec()`, `execSync()`, `spawn()`, `eval()` usage
+  - Identifies destructive operations: `rm -rf /`, `rm -rf ~`, `rm -rf *`
+  - Catches network exfiltration: `curl | bash`, `wget | sh`
+  - Detects reverse shells: netcat `-e`, `/dev/tcp/` redirects
+  - Finds encoded commands: PowerShell `-encodedCommand`, base64 decoding
+  - Identifies credential access: `/etc/shadow`, environment variables
+  - Supports Node.js and Python subprocess patterns
+  - Dynamic code execution warnings: `eval()`, `new Function()`, `vm.run*`
+  - Automatically skips test files
+
 - **AI-Generated Content Detection** ✅
   - Detects: ChatGPT, OpenAI, Claude, Anthropic, GPT-3/4, Copilot, Gemini, Bard
   - Automatically skips test files (*.test.js, *.spec.js)
@@ -16,11 +28,10 @@ Static analysis tool for Model Context Protocol (MCP) repository security vulner
   - Configurable severity levels (warning/error/info)
 
 ### Planned Analyzers:
-- Command injection detection (stub)
-- Token passthrough detection (stub)
-- Unauthenticated endpoints detection (stub)
-- OAuth hygiene checker (stub)
-- Argument validation (stub)
+- Token passthrough detection (planned)
+- Unauthenticated endpoints detection (planned)
+- OAuth hygiene checker (planned)
+- Argument validation (planned)
 
 ## Installation
 

@@ -92,6 +92,149 @@ class CommandExecAnalyzer extends BaseAnalyzer {
       return this.analyzeShellScript(filePath, content);
     }
 
+    // Try AST analysis first for JS/TS files
+    const ast = this.parseAST(content);
+    if (ast) {
+      try {
+        return this.analyzeAST(ast, filePath, content);
+      } catch (err) {
+        console.warn(`AST analysis failed for ${filePath}, falling back to regex:`, err.message);
+      }
+    }
+
+    // Fallback to Regex (original implementation)
+    return this.analyzeRegex(filePath, content);
+  }
+
+  analyzeAST(ast, filePath, content) {
+    const findings = [];
+    const self = this;
+
+    this.walkAST(ast, {
+      CallExpression(node) {
+        self.handleNode(node, filePath, findings, content);
+      },
+      NewExpression(node) {
+        self.handleNode(node, filePath, findings, content);
+      }
+    });
+
+    return findings;
+  }
+
+  handleNode(node, filePath, findings, content) {
+    // Identify the function name being called
+    let functionName = '';
+    let fullMethodName = '';
+
+    if (node.callee.type === 'Identifier') {
+      functionName = node.callee.name; // e.g., exec()
+      fullMethodName = functionName;
+    } else if (node.callee.type === 'MemberExpression') {
+      functionName = node.callee.property.name; // e.g., exec()
+      // Construct full name like "child_process.exec" or "vm.runInNewContext"
+      if (node.callee.object.type === 'Identifier') {
+        fullMethodName = `${node.callee.object.name}.${functionName}`;
+      } else {
+        fullMethodName = functionName;
+      }
+    }
+
+    // Check if it's a dangerous execution method
+    const dangerousFuncs = [
+      'exec', 'execSync', 'spawn', 'spawnSync',
+      'execFile', 'execFileSync', 'fork',
+      'eval', 'Function',
+      'runInNewContext', 'runInThisContext', 'createContext'
+    ];
+
+    if (dangerousFuncs.includes(functionName)) {
+      this.analyzeDangerousCall(node, filePath, findings, content, fullMethodName);
+    }
+  }
+
+  analyzeDangerousCall(node, filePath, findings, content, functionName) {
+    if (!node.arguments || node.arguments.length === 0) return;
+
+    let dangerousPattern = null;
+    let isDynamic = false;
+    const argsContent = [];
+
+    // Check all arguments for dangerous patterns
+    for (const arg of node.arguments) {
+      const argContent = content.substring(arg.start, arg.end);
+      argsContent.push(argContent);
+
+      // Strip quotes for cleaner regex matching
+      const cleanArg = argContent.replace(/^['"`]|['"`]$/g, '');
+
+      // Check for specific dangerous commands within this argument
+      for (const cmd of this.dangerousCommands) {
+        if (cmd.pattern.test(cleanArg) || cmd.pattern.test(argContent)) {
+          dangerousPattern = cmd;
+          break;
+        }
+      }
+      if (dangerousPattern) break;
+
+      // Check for dynamic nature
+      if (arg.type === 'TemplateLiteral' && arg.expressions.length > 0) {
+        isDynamic = true;
+      } else if (arg.type === 'BinaryExpression') {
+        isDynamic = true;
+      } else if (arg.type === 'Identifier') {
+        isDynamic = true;
+      }
+    }
+
+    const location = { line: node.loc.start.line, column: node.loc.start.column };
+    const joinedArgs = argsContent.join(' ').replace(/\s+/g, ' '); // Normalize whitespace (handle newlines)
+
+    // Check joined arguments for dangerous patterns (handles split command/args like spawn('powershell', ['-enc', ...]))
+    if (!dangerousPattern) {
+      for (const cmd of this.dangerousCommands) {
+        if (cmd.pattern.test(joinedArgs)) {
+          dangerousPattern = cmd;
+          break;
+        }
+      }
+    }
+
+    if (dangerousPattern) {
+      findings.push(this.createFinding(
+        filePath,
+        location.line,
+        location.column,
+        `Dangerous command execution detected: ${dangerousPattern.description} using ${functionName}`,
+        'dangerous-command-exec',
+        dangerousPattern.severity === 'error' ? 'error' : this.severity
+      ));
+    } else if (isDynamic) {
+      // Generic warning for dynamic execution
+      // Format: "via eval(userInput)" to satisfy tests looking for "eval("
+      findings.push(this.createFinding(
+        filePath,
+        location.line,
+        location.column,
+        `Dynamic command execution detected via ${functionName}(${joinedArgs}). Ensure user input is properly validated.`,
+        'command-exec-usage',
+        'warning'
+      ));
+    } else {
+      // Generic warning for static/safe execution
+      findings.push(this.createFinding(
+        filePath,
+        location.line,
+        location.column,
+        `Command execution method detected: ${functionName}(${joinedArgs}). Ensure user input is properly validated.`,
+        'command-exec-usage',
+        'warning'
+      ));
+    }
+  }
+
+  analyzeRegex(filePath, content) {
+    const findings = [];
     // First pass: Detect execution method usage
     this.execPatterns.forEach((pattern) => {
       const matches = content.matchAll(pattern);

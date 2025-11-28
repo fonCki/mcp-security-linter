@@ -1,15 +1,26 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "description": "Default configuration for MCP Security Linter",
-
   "global": {
     "fileExtensions": [
-      ".js", ".ts", ".jsx", ".tsx",
-      ".py", ".java", ".go", ".rb",
+      ".js",
+      ".ts",
+      ".jsx",
+      ".tsx",
+      ".py",
+      ".java",
+      ".go",
+      ".rb",
       ".json",
-      ".env", ".env.example", ".env.local", ".env.production",
-      ".yml", ".yaml",
-      ".sh", ".bash", ".zsh",
+      ".env",
+      ".env.example",
+      ".env.local",
+      ".env.production",
+      ".yml",
+      ".yaml",
+      ".sh",
+      ".bash",
+      ".zsh",
       ".dockerfile"
     ],
     "excludePatterns": [
@@ -24,41 +35,53 @@
       "**/yarn.lock",
       "**/pnpm-lock.yaml"
     ],
-    "testFilePatterns": [".test.", ".spec.", "__tests__", "/tests/", "/test/"],
+    "testFilePatterns": [
+      ".test.",
+      ".spec.",
+      "__tests__",
+      "/tests/",
+      "/test/"
+    ],
     "defaultSeverity": "warning"
   },
-
   "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "severity": "warning",
-      "fileExtensions": null,
-      "testFilePatterns": null
-    },
     "command-exec": {
       "enabled": true,
       "severity": "error",
-      "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb", ".sh", ".bash", ".zsh", ".json"]
+      "fileExtensions": [
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".py",
+        ".java",
+        ".go",
+        ".rb",
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".json"
+      ]
     },
     "config-file-scanner": {
       "enabled": false,
       "severity": "error",
-      "fileExtensions": [".json", ".yml", ".yaml", ".env", ".env.example"],
+      "fileExtensions": [
+        ".json",
+        ".yml",
+        ".yaml",
+        ".env",
+        ".env.example"
+      ],
       "description": "Scans MCP config files for malicious startup commands"
     },
-    "secret-detector": {
-      "enabled": false,
-      "severity": "error",
-      "fileExtensions": [".json", ".env", ".env.example", ".env.local", ".yml", ".yaml", ".js", ".ts", ".py"],
-      "description": "Detects hardcoded secrets (API keys, passwords, tokens)"
-    },
     "token-passthrough": {
-      "enabled": false,
-      "severity": "error"
+      "enabled": true,
+      "severity": "warning"
     },
     "unauthenticated-endpoints": {
-      "enabled": false,
-      "severity": "error"
+      "enabled": true,
+      "severity": "warning"
     },
     "oauth-hygiene": {
       "enabled": false,
@@ -69,9 +92,12 @@
       "severity": "error"
     }
   },
-
   "output": {
-    "formats": ["console", "json", "sarif"],
+    "formats": [
+      "console",
+      "json",
+      "sarif"
+    ],
     "defaultFormat": "console",
     "sarif": {
       "toolName": "MCP Security Linter",

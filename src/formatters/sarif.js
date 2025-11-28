@@ -27,8 +27,8 @@ function format(findings) {
                   uri: finding.location.file
                 },
                 region: {
-                  startLine: finding.location.line,
-                  startColumn: finding.location.column
+                  startLine: Math.max(1, finding.location.line || 1),
+                  startColumn: Math.max(1, finding.location.column || 1)
                 }
               }
             }

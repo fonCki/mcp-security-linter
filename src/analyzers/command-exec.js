@@ -1,388 +1,283 @@
 const BaseAnalyzer = require('./base-analyzer');
 const path = require('path');
+const walk = require('acorn-walk');
 
 const NAME = 'command-exec';
-
-// Dangerous command execution patterns
-const EXEC_METHODS = [
-  // Node.js child_process methods
-  /\bexec\s*\(/gi,
-  /\bexecSync\s*\(/gi,
-  /\bspawn\s*\(/gi,
-  /\bspawnSync\s*\(/gi,
-  /\bexecFile\s*\(/gi,
-  /\bexecFileSync\s*\(/gi,
-  /\bfork\s*\(/gi,
-
-  // Python subprocess methods
-  /subprocess\.call\s*\(/gi,
-  /subprocess\.run\s*\(/gi,
-  /subprocess\.Popen\s*\(/gi,
-  /os\.system\s*\(/gi,
-  /os\.popen\s*\(/gi,
-
-  // Dynamic code execution
-  /\beval\s*\(/gi,
-  /new\s+Function\s*\(/gi,
-  /vm\.runInNewContext\s*\(/gi,
-  /vm\.runInThisContext\s*\(/gi
-];
-
-// Dangerous command patterns (high severity)
-const DANGEROUS_COMMANDS = [
-  // Destructive operations (order matters - check specific patterns before generic ones)
-  { pattern: /rm\s+-rf\s+\/(?:\s|$|'|"|;|\))/, description: 'Deletes root directory', severity: 'error' },
-  { pattern: /rm\s+-rf\s+~(?:\s|$|'|"|;|\))/, description: 'Deletes home directory', severity: 'error' },
-  { pattern: /rm\s+-rf\s+\*(?:\s|$|'|"|;|\))/, description: 'Recursive deletion with wildcard', severity: 'error' },
-  { pattern: /rm\s+-rf\s+\/\w+\/\*/, description: 'Recursive deletion in directory', severity: 'warning' },
-  { pattern: /\bdd\s+if=.*of=\/dev\//, description: 'Potentially destructive disk operation', severity: 'error' },
-  { pattern: /\bmkfs\b/, description: 'Format filesystem operation', severity: 'error' },
-
-  // Network/credential exfiltration
-  { pattern: /curl\s+.*\|\s*(?:bash|sh|python)/i, description: 'Pipe curl output to shell', severity: 'error' },
-  { pattern: /wget\s+.*\|\s*(?:bash|sh|python)/i, description: 'Pipe wget output to shell', severity: 'error' },
-  { pattern: /\bnc\s+-e/i, description: 'Netcat with execute flag (reverse shell)', severity: 'error' },
-  { pattern: /\bnetcat\s+-e/i, description: 'Netcat with execute flag (reverse shell)', severity: 'error' },
-
-  // Encoded/obfuscated commands
-  { pattern: /powershell.*-enc(?:oded)?(?:command)?/i, description: 'Encoded PowerShell command', severity: 'error' },
-  { pattern: /powershell.*-e\s+[A-Za-z0-9+\/=]{20,}/i, description: 'Base64-encoded PowerShell', severity: 'error' },
-  { pattern: /base64\s+-d.*(?:bash|sh)/i, description: 'Base64-decoded shell command', severity: 'error' },
-  { pattern: /echo.*base64.*bash/i, description: 'Base64-decoded shell command', severity: 'error' },
-
-  // Credential access
-  { pattern: /\/etc\/shadow/, description: 'Access to shadow password file', severity: 'error' },
-  { pattern: /\/etc\/passwd/, description: 'Access to password file', severity: 'warning' },
-  { pattern: /\$(?:AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|GITHUB_TOKEN|OPENAI_API_KEY)/, description: 'Credential environment variable access', severity: 'warning' },
-
-  // Suspicious shell operations
-  { pattern: /chmod\s+777/i, description: 'Setting overly permissive file permissions', severity: 'warning' },
-  { pattern: /\/dev\/tcp\//i, description: 'Bash /dev/tcp/ network redirection (potential backdoor)', severity: 'error' },
-  { pattern: />\s*\/dev\/null\s+2>&1/i, description: 'Suppressing all output (potential stealth)', severity: 'warning' }
-];
 
 class CommandExecAnalyzer extends BaseAnalyzer {
   constructor(options = {}) {
     super(NAME, options);
 
     const globalConfig = options.globalConfig || {};
-    this.extensions = options.fileExtensions || globalConfig.fileExtensions || ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.json'];
+    this.extensions = options.fileExtensions || globalConfig.fileExtensions || ['.js', '.ts', '.jsx', '.tsx'];
     this.testPatterns = options.testFilePatterns || globalConfig.testFilePatterns || ['.test.', '.spec.', '__tests__'];
-
-    // Allow custom patterns to be added
-    this.execPatterns = options.customExecPatterns ?
-      [...EXEC_METHODS, ...options.customExecPatterns] :
-      EXEC_METHODS;
-
-    this.dangerousCommands = options.customDangerousCommands ?
-      [...DANGEROUS_COMMANDS, ...options.customDangerousCommands] :
-      DANGEROUS_COMMANDS;
   }
 
   analyze(filePath, content) {
-    const findings = [];
-
     if (!this.shouldAnalyze(filePath)) {
-      return findings;
+      return [];
     }
 
-    // Shell scripts (.sh, .bash, .zsh) - scan for dangerous patterns directly
-    const ext = path.extname(filePath);
-    if (['.sh', '.bash', '.zsh'].includes(ext)) {
-      return this.analyzeShellScript(filePath, content);
-    }
-
-    // Try AST analysis first for JS/TS files
     const ast = this.parseAST(content);
-    if (ast) {
-      try {
-        return this.analyzeAST(ast, filePath, content);
-      } catch (err) {
-        console.warn(`AST analysis failed for ${filePath}, falling back to regex:`, err.message);
-      }
+    if (!ast) {
+      return [];
     }
 
-    // Fallback to Regex (original implementation)
-    return this.analyzeRegex(filePath, content);
-  }
+    try {
+      let findings = [];
+      let functionTaints = new Map();
+      let changed = true;
+      let iterations = 0;
+      const MAX_ITERATIONS = 10;
 
-  analyzeAST(ast, filePath, content) {
-    const findings = [];
-    const self = this;
+      while (changed && iterations < MAX_ITERATIONS) {
+        changed = false;
+        iterations++;
+        findings = [];
 
-    this.walkAST(ast, {
-      CallExpression(node) {
-        self.handleNode(node, filePath, findings, content);
-      },
-      NewExpression(node) {
-        self.handleNode(node, filePath, findings, content);
-      }
-    });
+        const result = this.analyzePass(ast, filePath, content, functionTaints);
+        findings = result.findings;
 
-    return findings;
-  }
-
-  handleNode(node, filePath, findings, content) {
-    // Identify the function name being called
-    let functionName = '';
-    let fullMethodName = '';
-
-    if (node.callee.type === 'Identifier') {
-      functionName = node.callee.name; // e.g., exec()
-      fullMethodName = functionName;
-    } else if (node.callee.type === 'MemberExpression') {
-      functionName = node.callee.property.name; // e.g., exec()
-      // Construct full name like "child_process.exec" or "vm.runInNewContext"
-      if (node.callee.object.type === 'Identifier') {
-        fullMethodName = `${node.callee.object.name}.${functionName}`;
-      } else {
-        fullMethodName = functionName;
-      }
-    }
-
-    // Check if it's a dangerous execution method
-    const dangerousFuncs = [
-      'exec', 'execSync', 'spawn', 'spawnSync',
-      'execFile', 'execFileSync', 'fork',
-      'eval', 'Function',
-      'runInNewContext', 'runInThisContext', 'createContext'
-    ];
-
-    if (dangerousFuncs.includes(functionName)) {
-      this.analyzeDangerousCall(node, filePath, findings, content, fullMethodName);
-    }
-  }
-
-  analyzeDangerousCall(node, filePath, findings, content, functionName) {
-    if (!node.arguments || node.arguments.length === 0) return;
-
-    let dangerousPattern = null;
-    let isDynamic = false;
-    const argsContent = [];
-
-    // Check all arguments for dangerous patterns
-    for (const arg of node.arguments) {
-      const argContent = content.substring(arg.start, arg.end);
-      argsContent.push(argContent);
-
-      // Strip quotes for cleaner regex matching
-      const cleanArg = argContent.replace(/^['"`]|['"`]$/g, '');
-
-      // Check for specific dangerous commands within this argument
-      for (const cmd of this.dangerousCommands) {
-        if (cmd.pattern.test(cleanArg) || cmd.pattern.test(argContent)) {
-          dangerousPattern = cmd;
-          break;
-        }
-      }
-      if (dangerousPattern) break;
-
-      // Check for dynamic nature
-      if (arg.type === 'TemplateLiteral' && arg.expressions.length > 0) {
-        isDynamic = true;
-      } else if (arg.type === 'BinaryExpression') {
-        isDynamic = true;
-      } else if (arg.type === 'Identifier') {
-        isDynamic = true;
-      }
-    }
-
-    const location = { line: node.loc.start.line, column: node.loc.start.column };
-    const joinedArgs = argsContent.join(' ').replace(/\s+/g, ' '); // Normalize whitespace (handle newlines)
-
-    // Check joined arguments for dangerous patterns (handles split command/args like spawn('powershell', ['-enc', ...]))
-    if (!dangerousPattern) {
-      for (const cmd of this.dangerousCommands) {
-        if (cmd.pattern.test(joinedArgs)) {
-          dangerousPattern = cmd;
-          break;
-        }
-      }
-    }
-
-    if (dangerousPattern) {
-      findings.push(this.createFinding(
-        filePath,
-        location.line,
-        location.column,
-        `Dangerous command execution detected: ${dangerousPattern.description} using ${functionName}`,
-        'dangerous-command-exec',
-        dangerousPattern.severity === 'error' ? 'error' : this.severity
-      ));
-    } else if (isDynamic) {
-      // Generic warning for dynamic execution
-      // Format: "via eval(userInput)" to satisfy tests looking for "eval("
-      findings.push(this.createFinding(
-        filePath,
-        location.line,
-        location.column,
-        `Dynamic command execution detected via ${functionName}(${joinedArgs}). Ensure user input is properly validated.`,
-        'command-exec-usage',
-        'warning'
-      ));
-    } else {
-      // Generic warning for static/safe execution
-      findings.push(this.createFinding(
-        filePath,
-        location.line,
-        location.column,
-        `Command execution method detected: ${functionName}(${joinedArgs}). Ensure user input is properly validated.`,
-        'command-exec-usage',
-        'warning'
-      ));
-    }
-  }
-
-  analyzeRegex(filePath, content) {
-    const findings = [];
-    // First pass: Detect execution method usage
-    this.execPatterns.forEach((pattern) => {
-      const matches = content.matchAll(pattern);
-      for (const match of matches) {
-        const location = this.getLocation(content, match.index);
-
-        // Extract the statement containing this match
-        // Find the start of the current line
-        let lineStart = match.index;
-        while (lineStart > 0 && content[lineStart - 1] !== '\n') {
-          lineStart--;
-        }
-
-        // Find the end of the statement (next semicolon, closing paren + semicolon, or several newlines)
-        let statementEnd = match.index;
-        let parenDepth = 0;
-        let braceDepth = 0;
-
-        while (statementEnd < content.length) {
-          const char = content[statementEnd];
-
-          if (char === '(') parenDepth++;
-          if (char === ')') parenDepth--;
-          if (char === '{') braceDepth++;
-          if (char === '}') braceDepth--;
-
-          // End of statement: semicolon at depth 0, or closing all parens/braces
-          if (char === ';' && parenDepth === 0) {
-            statementEnd++;
-            break;
+        for (const [funcName, paramMap] of result.newFunctionTaints) {
+          if (!functionTaints.has(funcName)) {
+            functionTaints.set(funcName, new Map());
           }
 
-          // For spawn/exec calls, we want to include the full call with arguments
-          if (char === ')' && parenDepth === 0 && statementEnd > match.index + 10) {
-            statementEnd += 50; // Grab a bit more to ensure we get string args
-            break;
-          }
-
-          statementEnd++;
-
-          // Safety limit
-          if (statementEnd - match.index > 500) break;
-        }
-
-        const context = content.substring(lineStart, statementEnd);
-
-        // Check if this execution contains dangerous patterns
-        let dangerousPattern = null;
-        let maxSeverity = this.severity;
-
-        for (const cmd of this.dangerousCommands) {
-          if (cmd.pattern.test(context)) {
-            dangerousPattern = cmd;
-            // Upgrade severity if dangerous command found
-            if (cmd.severity === 'error') {
-              maxSeverity = 'error';
+          const currentTaints = functionTaints.get(funcName);
+          for (const [paramIndex, origin] of paramMap) {
+            if (!currentTaints.has(paramIndex) || currentTaints.get(paramIndex) !== origin) {
+              currentTaints.set(paramIndex, origin);
+              changed = true;
             }
-            break;
           }
         }
-
-        if (dangerousPattern) {
-          findings.push(this.createFinding(
-            filePath,
-            location.line,
-            location.column,
-            `Dangerous command execution detected: ${dangerousPattern.description} using "${match[0].trim()}"`,
-            'dangerous-command-exec',
-            maxSeverity
-          ));
-        } else {
-          // Generic execution method warning (lower severity)
-          findings.push(this.createFinding(
-            filePath,
-            location.line,
-            location.column,
-            `Command execution method detected: "${match[0].trim()}". Ensure user input is properly validated and sanitized.`,
-            'command-exec-usage',
-            'warning'
-          ));
-        }
       }
-    });
 
-    return findings;
+      return findings;
+    } catch (err) {
+      console.warn(`AST analysis failed for ${filePath}:`, err.message);
+      return [];
+    }
   }
 
-  analyzeShellScript(filePath, content) {
+  analyzePass(ast, filePath, content, existingFunctionTaints) {
+    const self = this;
     const findings = [];
-    const lines = content.split('\n');
+    const newFunctionTaints = new Map();
 
-    lines.forEach((line, index) => {
-      const lineNumber = index + 1;
-      const trimmedLine = line.trim();
+    const state = {
+      scopeStack: [new Map()],
 
-      // Skip comments and empty lines
-      if (trimmedLine.startsWith('#') || trimmedLine.length === 0) {
-        return;
+      getCurrentScope() {
+        return this.scopeStack[this.scopeStack.length - 1];
+      },
+
+      isTainted(name) {
+        for (let i = this.scopeStack.length - 1; i >= 0; i--) {
+          if (this.scopeStack[i].has(name)) {
+            return this.scopeStack[i].get(name);
+          }
+        }
+        return null;
+      },
+
+      taint(name, origin) {
+        this.getCurrentScope().set(name, origin);
+      },
+
+      pushScope() {
+        this.scopeStack.push(new Map());
+      },
+
+      popScope() {
+        this.scopeStack.pop();
       }
+    };
 
-      // Check for dangerous command patterns in each line
-      for (const cmd of this.dangerousCommands) {
-        if (cmd.pattern.test(line)) {
-          findings.push(this.createFinding(
-            filePath,
-            lineNumber,
-            1,
-            `Dangerous shell command detected: ${cmd.description}`,
-            'dangerous-shell-command',
-            cmd.severity
-          ));
-          break; // Only report first match per line
+    const visitors = {
+      FunctionDeclaration(node, st, c) {
+        st.pushScope();
+        const funcName = node.id.name;
+
+        if (existingFunctionTaints.has(funcName)) {
+          const taintedParams = existingFunctionTaints.get(funcName);
+          node.params.forEach((param, index) => {
+            if (taintedParams.has(index) && param.type === 'Identifier') {
+              st.taint(param.name, taintedParams.get(index));
+            }
+          });
+        }
+
+        c(node.body, st);
+        st.popScope();
+      },
+
+      ArrowFunctionExpression(node, st, c) {
+        st.pushScope();
+        c(node.body, st);
+        st.popScope();
+      },
+
+      FunctionExpression(node, st, c) {
+        st.pushScope();
+        c(node.body, st);
+        st.popScope();
+      },
+
+      VariableDeclarator(node, st, c) {
+        if (node.id.type === 'Identifier') {
+          const varName = node.id.name;
+          if (node.init) {
+            if (self.isProcessEnv(node.init)) {
+              st.taint(varName, 'process.env');
+            } else {
+              const result = self.getTaintOrigin(node.init, st.isTainted.bind(st));
+              if (result) st.taint(varName, result.origin);
+            }
+          }
+        }
+        if (node.init) c(node.init, st);
+      },
+
+      AssignmentExpression(node, st, c) {
+        if (node.left.type === 'Identifier') {
+          const varName = node.left.name;
+          if (self.isProcessEnv(node.right)) {
+            st.taint(varName, 'process.env');
+          } else {
+            const result = self.getTaintOrigin(node.right, st.isTainted.bind(st));
+            if (result) st.taint(varName, result.origin);
+          }
+        }
+        c(node.right, st);
+      },
+
+      CallExpression(node, st, c) {
+        self.checkCallExpression(node, st.isTainted.bind(st), filePath, findings, content);
+
+        if (node.callee.type === 'Identifier') {
+          const funcName = node.callee.name;
+          node.arguments.forEach((arg, index) => {
+            const result = self.getTaintOrigin(arg, st.isTainted.bind(st));
+            if (result) {
+              if (!newFunctionTaints.has(funcName)) {
+                newFunctionTaints.set(funcName, new Map());
+              }
+              newFunctionTaints.get(funcName).set(index, result.origin);
+            }
+          });
+        }
+
+        node.arguments.forEach(arg => c(arg, st));
+        c(node.callee, st);
+      }
+    };
+
+    walk.recursive(ast, state, visitors);
+
+    return { findings, newFunctionTaints };
+  }
+
+  isProcessEnv(node) {
+    if (node.type === 'MemberExpression') {
+      if (node.object.type === 'MemberExpression' &&
+        node.object.object.name === 'process' &&
+        node.object.property.name === 'env') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getTaintOrigin(node, isTainted) {
+    if (!node) return null;
+
+    if (node.type === 'Identifier') {
+      const origin = isTainted(node.name);
+      if (origin) return { origin, source: node };
+      return null;
+    }
+
+    if (node.type === 'Literal') return null;
+
+    if (node.type === 'ConditionalExpression') {
+      return this.getTaintOrigin(node.consequent, isTainted) || this.getTaintOrigin(node.alternate, isTainted);
+    }
+
+    if (node.type === 'BinaryExpression') {
+      return this.getTaintOrigin(node.left, isTainted) || this.getTaintOrigin(node.right, isTainted);
+    }
+
+    if (node.type === 'TemplateLiteral') {
+      for (const expr of node.expressions) {
+        const result = this.getTaintOrigin(expr, isTainted);
+        if (result) return result;
+      }
+    }
+
+    if (node.type === 'ObjectExpression') {
+      for (const prop of node.properties) {
+        if (prop.type === 'Property') {
+          const result = this.getTaintOrigin(prop.value, isTainted);
+          if (result) return result;
         }
       }
-    });
+    }
 
-    return findings;
+    if (node.type === 'ArrayExpression') {
+      for (const el of node.elements) {
+        if (el) {
+          const result = this.getTaintOrigin(el, isTainted);
+          if (result) return result;
+        }
+      }
+    }
+
+    if (this.isProcessEnv(node)) return { origin: 'process.env', source: node };
+
+    return null;
+  }
+
+  checkCallExpression(node, isTainted, filePath, findings, content) {
+    let functionName = '';
+    if (node.callee.type === 'Identifier') {
+      functionName = node.callee.name;
+    } else if (node.callee.type === 'MemberExpression') {
+      const prop = node.callee.property.name;
+      const obj = node.callee.object.name;
+      functionName = obj ? `${obj}.${prop}` : prop;
+    }
+
+    const isDangerous = /^(exec|execSync|spawn|spawnSync|eval)$/.test(functionName) ||
+      /^(child_process|cp)\.(exec|execSync|spawn|spawnSync)$/.test(functionName) ||
+      /^(vm)\.(runInContext|runInNewContext|runInThisContext)$/.test(functionName);
+
+    if (isDangerous) {
+      node.arguments.forEach((arg, index) => {
+        // Only check first argument for exec/eval, or first/second for others?
+        // For exec(cmd), it's arg 0.
+        // For spawn(cmd, args), it's arg 0 and 1.
+        // Let's check all args for taint to be safe/aggressive.
+
+        const result = this.getTaintOrigin(arg, isTainted);
+        if (result) {
+          this.reportFinding(filePath, arg, functionName, result.origin, findings);
+        }
+      });
+    }
+  }
+
+  reportFinding(filePath, node, functionName, origin, findings) {
+    const location = node.loc ? { line: node.loc.start.line, column: node.loc.start.column } : { line: 0, column: 0 };
+    const message = `Dangerous command execution detected in '${functionName}'. Tainted input from '${origin}' flows into this command.`;
+
+    findings.push(this.createFinding(filePath, location.line, location.column, message, 'command-exec', 'error'));
   }
 
   shouldAnalyze(filePath) {
     const ext = path.extname(filePath);
-
-    // Skip test files
-    if (this.testPatterns.some(pattern => filePath.includes(pattern))) {
-      return false;
-    }
-
+    if (this.testPatterns.some(pattern => filePath.includes(pattern))) return false;
     return this.extensions.includes(ext);
-  }
-
-  getLocation(content, index) {
-    const lines = content.substring(0, index).split('\n');
-    const line = lines.length;
-    const column = lines[lines.length - 1].length + 1;
-    return { line, column };
-  }
-
-  createFinding(file, line, column, message, ruleId = null, severity = null) {
-    return {
-      ruleId: ruleId || this.name,
-      level: severity || this.severity,
-      message: message,
-      location: {
-        file: file,
-        line: line,
-        column: column
-      }
-    };
   }
 }
 

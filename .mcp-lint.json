@@ -1,0 +1,18 @@
+{
+    "global": {
+        "excludePatterns": [
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/.git/**",
+            "**/tests/fixtures/**",
+            "**/test/fixtures/**",
+            "**/.vscode/**",
+            "**/.idea/**",
+            "**/package-lock.json",
+            "**/yarn.lock",
+            "**/pnpm-lock.yaml",
+            "demo.js",
+            "demo-vulnerable.js"
+        ]
+    }
+}

@@ -1,6 +1,6 @@
 # MCP Security Linter
 
-[![npm version](https://badge.fury.io/js/mcp-security-linter.svg)](https://www.npmjs.com/package/mcp-security-linter)
+[![npm version](https://img.shields.io/npm/v/mcp-security-linter.svg)](https://www.npmjs.com/package/mcp-security-linter)
 [![npm downloads](https://img.shields.io/npm/dm/mcp-security-linter.svg)](https://www.npmjs.com/package/mcp-security-linter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

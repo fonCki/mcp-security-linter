@@ -42,7 +42,8 @@ class BaseAnalyzer {
         ecmaVersion: 2022,
         sourceType: 'module',
         locations: true,
-        ranges: true
+        ranges: true,
+        allowHashBang: true  // Handle #!/usr/bin/env node shebangs
       });
     } catch (error) {
       // Fallback or silence error for non-JS files or syntax errors

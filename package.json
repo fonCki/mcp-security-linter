@@ -1,6 +1,6 @@
 {
   "name": "mcp-security-linter",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Static analysis tool for MCP repository security vulnerabilities",
   "main": "src/index.js",
   "bin": {

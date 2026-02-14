@@ -63,18 +63,6 @@
         ".json"
       ]
     },
-    "config-file-scanner": {
-      "enabled": false,
-      "severity": "error",
-      "fileExtensions": [
-        ".json",
-        ".yml",
-        ".yaml",
-        ".env",
-        ".env.example"
-      ],
-      "description": "Scans MCP config files for malicious startup commands"
-    },
     "token-passthrough": {
       "enabled": true,
       "severity": "warning"

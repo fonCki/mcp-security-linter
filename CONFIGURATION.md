@@ -33,14 +33,21 @@ You can specify a custom config file path using:
 ```json
 {
   "global": {
-    "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb"],
+    "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb",
+      ".json", ".env", ".env.example", ".env.local", ".env.production",
+      ".yml", ".yaml", ".sh", ".bash", ".zsh", ".dockerfile"],
     "testFilePatterns": [".test.", ".spec.", "__tests__", "/tests/", "/test/"],
     "excludePatterns": [
       "**/node_modules/**",
       "**/dist/**",
       "**/.git/**",
       "**/tests/fixtures/**",
-      "**/test/fixtures/**"
+      "**/test/fixtures/**",
+      "**/.vscode/**",
+      "**/.idea/**",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/pnpm-lock.yaml"
     ],
     "defaultSeverity": "warning"
   }
@@ -49,7 +56,7 @@ You can specify a custom config file path using:
 
 #### `fileExtensions`
 - **Type:** Array of strings
-- **Default:** `[".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb"]`
+- **Default:** `[".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb", ".json", ".env", ".env.example", ".env.local", ".env.production", ".yml", ".yaml", ".sh", ".bash", ".zsh", ".dockerfile"]`
 - **Description:** File extensions to scan. Add more extensions to support additional languages.
 
 **Example:** Add PHP and C++ files:
@@ -64,7 +71,7 @@ You can specify a custom config file path using:
 #### `testFilePatterns`
 - **Type:** Array of strings
 - **Default:** `[".test.", ".spec.", "__tests__", "/tests/", "/test/"]`
-- **Description:** Patterns used to identify test files, which are automatically excluded from AI content detection.
+- **Description:** Patterns used to identify test files, which are automatically excluded from analysis.
 
 **Example:** Custom test patterns for your project:
 ```json
@@ -77,7 +84,7 @@ You can specify a custom config file path using:
 
 #### `excludePatterns`
 - **Type:** Array of strings (glob patterns)
-- **Default:** `["**/node_modules/**", "**/dist/**", "**/.git/**", "**/tests/fixtures/**", "**/test/fixtures/**"]`
+- **Default:** `["**/node_modules/**", "**/dist/**", "**/.git/**", "**/tests/fixtures/**", "**/test/fixtures/**", "**/.vscode/**", "**/.idea/**", "**/package-lock.json", "**/yarn.lock", "**/pnpm-lock.yaml"]`
 - **Description:** Directory patterns to exclude from scanning.
 
 **Example:** Exclude additional directories:
@@ -108,12 +115,10 @@ Each analyzer can be configured individually:
 ```json
 {
   "analyzers": {
-    "ai-detector": {
+    "command-exec": {
       "enabled": true,
-      "severity": "warning",
-      "fileExtensions": null,
-      "testFilePatterns": null,
-      "customPatterns": []
+      "severity": "error",
+      "fileExtensions": null
     }
   }
 }
@@ -125,27 +130,6 @@ Each analyzer can be configured individually:
 - **`severity`**: (String) Set to `"error"`, `"warning"`, or `"info"`
 - **`fileExtensions`**: (Array or null) Override global file extensions for this analyzer
 - **`testFilePatterns`**: (Array or null) Override global test patterns for this analyzer
-
-#### AI Detector Specific Options
-
-- **`customPatterns`**: (Array of RegExp patterns as strings) Additional AI tool names to detect
-
-**Example:** Detect additional AI tools:
-```json
-{
-  "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "severity": "warning",
-      "customPatterns": [
-        "\\bcursor\\b",
-        "\\btabnine\\b",
-        "\\bcodeium\\b"
-      ]
-    }
-  }
-}
-```
 
 #### Command Exec Analyzer Specific Options
 
@@ -231,44 +215,22 @@ Each analyzer can be configured individually:
 }
 ```
 
-### Example 5: Detect Organization-Specific AI Tools
+### Example 5: Strict Security (All Errors)
 
 ```json
 {
   "analyzers": {
-    "ai-detector": {
+    "command-exec": {
       "enabled": true,
-      "severity": "warning",
-      "customPatterns": [
-        "\\binternal-ai-assistant\\b",
-        "\\bcompany-copilot\\b"
-      ]
-    }
-  }
-}
-```
-
-### Example 6: Disable AI Detection for Test Files Only
-
-```json
-{
-  "analyzers": {
-    "ai-detector": {
+      "severity": "error"
+    },
+    "token-passthrough": {
       "enabled": true,
-      "testFilePatterns": [".test.", ".spec.", "__tests__"]
-    }
-  }
-}
-```
-
-### Example 7: Scan Everything (Including Tests)
-
-```json
-{
-  "analyzers": {
-    "ai-detector": {
+      "severity": "error"
+    },
+    "unauthenticated-endpoints": {
       "enabled": true,
-      "testFilePatterns": []
+      "severity": "error"
     }
   }
 }
@@ -328,9 +290,9 @@ The old configuration format (flat structure) is still supported:
 
 ```json
 {
-  "ai-detector": {
+  "command-exec": {
     "enabled": true,
-    "severity": "warning"
+    "severity": "error"
   }
 }
 ```
@@ -339,9 +301,9 @@ This format automatically maps to the new structure:
 ```json
 {
   "analyzers": {
-    "ai-detector": {
+    "command-exec": {
       "enabled": true,
-      "severity": "warning"
+      "severity": "error"
     }
   }
 }

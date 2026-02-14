@@ -15,10 +15,17 @@
   },
 
   "analyzers": {
-    "ai-detector": {
+    "command-exec": {
       "enabled": true,
-      "severity": "warning",
-      "customPatterns": []
+      "severity": "error"
+    },
+    "token-passthrough": {
+      "enabled": true,
+      "severity": "warning"
+    },
+    "unauthenticated-endpoints": {
+      "enabled": true,
+      "severity": "warning"
     }
   }
 }

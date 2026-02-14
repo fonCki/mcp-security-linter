@@ -1,6 +1,6 @@
 {
   "name": "mcp-security-linter",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Static analysis tool for MCP repository security vulnerabilities",
   "main": "src/index.js",
   "bin": {
@@ -20,7 +20,7 @@
     "static-analysis",
     "github-action",
     "model-context-protocol",
-    "ai-detection",
+    "taint-analysis",
     "security-scanner",
     "code-analysis",
     "vulnerability-scanner"
@@ -43,11 +43,9 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.0",
-    "@actions/github": "^5.1.1",
     "acorn": "^8.15.0",
     "acorn-walk": "^8.3.4",
     "glob": "^10.3.10",
-    "js-yaml": "^4.1.0",
     "minimist": "^1.2.8"
   },
   "devDependencies": {

@@ -741,7 +741,7 @@ class CommandExecAnalyzer extends BaseAnalyzer {
       message += `Tainted input from '${origin}' flows into this command.`;
     }
 
-    const severity = origin.startsWith('mcp-') ? 'error' : 'error';
+    const severity = 'error';
 
     findings.push(this.createFinding(filePath, location.line, location.column, message, 'command-exec', severity));
   }

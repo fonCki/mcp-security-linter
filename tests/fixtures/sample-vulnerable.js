@@ -1,8 +1,6 @@
 const express = require('express');
 const { exec } = require('child_process');
 
-// This file was generated with assistance from ChatGPT and Claude
-
 const app = express();
 
 // Dangerous command execution
@@ -30,14 +28,3 @@ app.delete('/admin/user/:id', (req, res) => {
   deleteUser(req.params.id);
   res.send('User deleted');
 });
-
-// OpenAI integration
-const openaiClient = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// Code suggested by Gemini AI
-function processData(input) {
-  // This algorithm was optimized by Anthropic's Claude
-  return input.map(x => x * 2);
-}

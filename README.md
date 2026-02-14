@@ -8,7 +8,7 @@ Static analysis tool for Model Context Protocol (MCP) repository security vulner
 
 ## Overview
 
-This linter implements **3 of the 5 security checks recommended by Anthropic** for MCP servers. It uses advanced static analysis (taint tracking, control flow analysis) to detect vulnerabilities with high precision and low false positives.
+This linter detects security vulnerabilities in MCP server implementations using static analysis techniques including taint tracking, control flow analysis, and middleware pattern matching. The detection rules target vulnerability patterns identified in MCP security research and the official [MCP Security Best Practices](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices).
 
 ## Features
 
@@ -31,14 +31,14 @@ This linter implements **3 of the 5 security checks recommended by Anthropic** f
     *   **Detects**: API endpoints exposed without authentication middleware.
     *   **Capabilities**: Understands `app.use()` order, router mounting hierarchies, and route-specific middleware.
 
-### Missing / Planned Analyzers (Anthropic Recommendations)
+### Planned Analyzers
 
-The following 2 recommended checks are **not yet implemented**:
+The following checks are planned for future releases:
 
 4.  **OAuth Hygiene Checker** ❌
-    *   *Goal*: Ensure proper handling of OAuth tokens and scopes.
+    *   *Goal*: Detect improper handling of OAuth tokens, weak redirect URI validation, and missing scope restrictions.
 5.  **Argument Validation** ❌
-    *   *Goal*: Verify that all user inputs are validated before use.
+    *   *Goal*: Verify that MCP tool arguments are validated before use in sensitive operations.
 
 ---
 

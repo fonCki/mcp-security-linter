@@ -6,7 +6,7 @@ Full results from the MCP Security Linter ecosystem analysis described in our IW
 
 | Parameter | Value |
 |-----------|-------|
-| **Linter Version** | MCP Security Linter v2.0.0 |
+| **Linter Version** | MCP Security Linter v1.4.2 |
 | **Scan Date** | November 29, 2025 |
 | **Repositories Analyzed** | 100 |
 | **Repositories with Findings** | 5 (+ 1 false positive set) |

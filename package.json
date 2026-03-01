@@ -1,7 +1,7 @@
 {
   "name": "mcp-security-linter",
   "version": "1.5.0",
-  "description": "Static analysis tool for MCP repository security vulnerabilities",
+  "description": "MCP-SecLint: Static analysis tool for detecting vulnerabilities in MCP server implementations",
   "main": "src/index.js",
   "bin": {
     "mcp-lint": "./src/cli.js"
@@ -15,12 +15,13 @@
   },
   "keywords": [
     "mcp",
+    "mcp-seclint",
     "security",
     "linter",
     "static-analysis",
     "github-action",
     "model-context-protocol",
-    "taint-analysis",
+    "ai-detection",
     "security-scanner",
     "code-analysis",
     "vulnerability-scanner"
@@ -33,7 +34,7 @@
     },
     {
       "name": "Zachary Kang",
-      "email": "s251598@dtu.dk"
+      "email": "zkjh@u.nus.edu"
     },
     {
       "name": "Alfonso Pedro Ridao",
@@ -43,9 +44,11 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
     "acorn": "^8.15.0",
     "acorn-walk": "^8.3.4",
     "glob": "^10.3.10",
+    "js-yaml": "^4.1.0",
     "minimist": "^1.2.8"
   },
   "devDependencies": {

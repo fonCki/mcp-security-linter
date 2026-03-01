@@ -1,14 +1,14 @@
-# MCP Security Linter
+# MCP-SecLint (MCP Security Linter)
 
 [![npm version](https://img.shields.io/npm/v/mcp-security-linter.svg)](https://www.npmjs.com/package/mcp-security-linter)
 [![npm downloads](https://img.shields.io/npm/dm/mcp-security-linter.svg)](https://www.npmjs.com/package/mcp-security-linter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Static analysis tool for Model Context Protocol (MCP) repository security vulnerabilities.
+MCP-SecLint is a static analysis tool for detecting security vulnerabilities in Model Context Protocol (MCP) server implementations.
 
 ## Overview
 
-This linter detects security vulnerabilities in MCP server implementations using static analysis techniques including taint tracking, control flow analysis, and middleware pattern matching. The detection rules target vulnerability patterns identified in MCP security research and the official [MCP Security Best Practices](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices).
+MCP-SecLint detects security vulnerabilities in MCP server implementations using static analysis techniques including taint tracking, control flow analysis, and middleware pattern matching. The detection rules target vulnerability patterns identified in MCP security research and the official [MCP Security Best Practices](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices).
 
 ## Features
 
@@ -36,9 +36,9 @@ This linter detects security vulnerabilities in MCP server implementations using
 The following checks are planned for future releases:
 
 4.  **OAuth Hygiene Checker** ❌
-    *   *Goal*: Detect improper handling of OAuth tokens, weak redirect URI validation, and missing scope restrictions.
+    *   *Goal*: Ensure proper handling of OAuth tokens and scopes.
 5.  **Argument Validation** ❌
-    *   *Goal*: Verify that MCP tool arguments are validated before use in sensitive operations.
+    *   *Goal*: Verify that all user inputs are validated before use.
 
 ---
 
@@ -81,7 +81,7 @@ mkdir -p .github/workflows
 Create a new file `.github/workflows/mcp-security.yml` (you can name it anything ending in `.yml`):
 
 ```yaml
-name: MCP Security Check
+name: MCP-SecLint Security Check
 
 on: [push, pull_request]
 
@@ -89,7 +89,7 @@ jobs:
   security-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - uses: fonCki/mcp-security-linter@master
         with:
           path: '.'
@@ -100,7 +100,7 @@ jobs:
 
 ```bash
 git add .github/workflows/mcp-security.yml
-git commit -m "Add MCP security linter workflow"
+git commit -m "Add MCP-SecLint security workflow"
 git push
 ```
 

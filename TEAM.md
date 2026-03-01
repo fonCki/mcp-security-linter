@@ -1,4 +1,4 @@
-# MCP Security Linter - Team Information
+# MCP-SecLint - Team Information
 
 ## Course
 **DTU Course 02234** - Research Topics in Cybersecurity
@@ -12,7 +12,7 @@ Technical University of Denmark (DTU Compute)
 
 ### Zachary Kang
 - **Student ID:** s251598
-- **Email:** s251598@dtu.dk
+- **Email:** zkjh@u.nus.edu
 
 ### Alfonso Pedro Ridao
 - **Student ID:** s243942
@@ -21,7 +21,7 @@ Technical University of Denmark (DTU Compute)
 ## Project Information
 
 **Project Type:** Technical Paper
-**Project Title:** MCP Security Linter - Static Analysis Tool for Model Context Protocol Repositories
+**Project Title:** MCP-SecLint - Static Analysis Tool for Model Context Protocol Server Implementations
 
 ## Repository
 

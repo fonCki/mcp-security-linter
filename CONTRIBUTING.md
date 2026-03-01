@@ -1,4 +1,4 @@
-# Contributing to MCP Security Linter
+# Contributing to MCP-SecLint
 
 ## Adding a New Analyzer
 

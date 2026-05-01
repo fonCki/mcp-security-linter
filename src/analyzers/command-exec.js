@@ -43,6 +43,9 @@ class CommandExecAnalyzer extends BaseAnalyzer {
     // MCP handler method names that receive untrusted input
     this.mcpHandlerMethods = new Set([
       'setRequestHandler', 'fallbackRequestHandler',
+      'tool', 'tools', 'registerTool',
+      'resource', 'resources', 'registerResource', 'readResource',
+      'prompt', 'prompts', 'registerPrompt',
       'handle', 'handleToolCall', 'handleRequest',
       'call', 'invoke'
     ]);
@@ -147,14 +150,14 @@ class CommandExecAnalyzer extends BaseAnalyzer {
             for (const arg of node.arguments) {
               if (arg.type === 'ArrowFunctionExpression' || arg.type === 'FunctionExpression') {
                 // Mark all params of the handler as tainted
-                arg.params.forEach((param, idx) => {
+                arg.params.forEach(param => {
                   if (param.type === 'Identifier') {
-                    context.toolHandlerParams.set(param.name, `mcp-handler-param-${idx}`);
+                    context.toolHandlerParams.set(param.name, `mcp-param:${param.name}`);
                   } else if (param.type === 'ObjectPattern') {
                     // Destructured params like ({ args, name }) => ...
                     param.properties.forEach(prop => {
                       if (prop.key?.name) {
-                        context.toolHandlerParams.set(prop.key.name, `mcp-handler-destructured`);
+                        context.toolHandlerParams.set(prop.key.name, `mcp-destructured:${prop.key.name}`);
                       }
                     });
                   }
@@ -173,9 +176,9 @@ class CommandExecAnalyzer extends BaseAnalyzer {
             context.isMCPServer = true;
 
             if (node.right.type === 'ArrowFunctionExpression' || node.right.type === 'FunctionExpression') {
-              node.right.params.forEach((param, idx) => {
+              node.right.params.forEach(param => {
                 if (param.type === 'Identifier') {
-                  context.toolHandlerParams.set(param.name, `mcp-fallback-param-${idx}`);
+                  context.toolHandlerParams.set(param.name, `mcp-param:${param.name}`);
                 }
               });
             }
@@ -195,12 +198,16 @@ class CommandExecAnalyzer extends BaseAnalyzer {
     // Track variables that are aliases for exec functions (e.g., execPromise = promisify(exec))
     const execAliases = new Set();
     const moduleAliases = new Set(['child_process', 'cp']);
+    const templateTagAliases = new Set();
+    const templateModuleAliases = new Set();
 
     const state = {
       scopeStack: [new Map()],
       mcpContext,
       execAliases,
       moduleAliases,
+      templateTagAliases,
+      templateModuleAliases,
 
       getCurrentScope() {
         return this.scopeStack[this.scopeStack.length - 1];
@@ -323,12 +330,21 @@ class CommandExecAnalyzer extends BaseAnalyzer {
           const varName = node.id.name;
           if (node.init) {
             const requiredSink = self.getRequiredExecSinkName(node.init);
+            const requiredTemplateTag = self.getRequiredTemplateTagName(node.init);
             if (self.isRequireOf(node.init, 'child_process')) {
               st.moduleAliases.add(varName);
+            }
+            // Check for require('zx') namespace alias
+            else if (self.isRequireOf(node.init, 'zx')) {
+              st.templateModuleAliases.add(varName);
             }
             // Check for require('child_process').exec alias
             else if (requiredSink) {
               st.execAliases.add(varName);
+            }
+            // Check for require('zx').$ alias
+            else if (requiredTemplateTag) {
+              st.templateTagAliases.add(varName);
             }
             // Check for promisify(exec) pattern - creates an exec alias
             else if (self.isPromisifiedExec(node.init, st.execAliases)) {
@@ -352,6 +368,8 @@ class CommandExecAnalyzer extends BaseAnalyzer {
         } else if (node.id.type === 'ObjectPattern' && node.init) {
           if (self.isRequireOf(node.init, 'child_process')) {
             self.trackObjectPatternExecAliases(node.id, st.execAliases);
+          } else if (self.isRequireOf(node.init, 'zx')) {
+            self.trackObjectPatternTemplateTagAliases(node.id, st.templateTagAliases);
           }
 
           // Destructuring: const { command, args } = something
@@ -404,6 +422,28 @@ class CommandExecAnalyzer extends BaseAnalyzer {
 
         node.arguments.forEach(arg => c(arg, st));
         c(node.callee, st);
+      },
+
+      NewExpression(node, st, c) {
+        self.checkNewExpression(node, st.isTainted.bind(st), filePath, findings, st.mcpContext);
+
+        node.arguments.forEach(arg => c(arg, st));
+        c(node.callee, st);
+      },
+
+      TaggedTemplateExpression(node, st, c) {
+        self.checkTaggedTemplateExpression(
+          node,
+          st.isTainted.bind(st),
+          filePath,
+          findings,
+          st.mcpContext,
+          st.templateTagAliases,
+          st.templateModuleAliases
+        );
+
+        c(node.tag, st);
+        c(node.quasi, st);
       }
     };
 
@@ -483,6 +523,27 @@ class CommandExecAnalyzer extends BaseAnalyzer {
 
   trackImportAliases(node, st) {
     const source = node.source?.value;
+
+    if (this.isZxGlobalsModule(source)) {
+      st.templateTagAliases.add('$');
+      return;
+    }
+
+    if (this.isZxModule(source)) {
+      for (const specifier of node.specifiers || []) {
+        if (specifier.type === 'ImportNamespaceSpecifier' || specifier.type === 'ImportDefaultSpecifier') {
+          if (specifier.local?.name) st.templateModuleAliases.add(specifier.local.name);
+        } else if (specifier.type === 'ImportSpecifier') {
+          const importedName = this.getPropertyName(specifier.imported);
+          const localName = specifier.local?.name;
+          if (localName && importedName === '$') {
+            st.templateTagAliases.add(localName);
+          }
+        }
+      }
+      return;
+    }
+
     if (!this.isChildProcessModule(source)) return;
 
     for (const specifier of node.specifiers || []) {
@@ -513,6 +574,21 @@ class CommandExecAnalyzer extends BaseAnalyzer {
     }
   }
 
+  trackObjectPatternTemplateTagAliases(pattern, templateTagAliases) {
+    if (pattern.type !== 'ObjectPattern') return;
+
+    for (const prop of pattern.properties || []) {
+      if (prop.type !== 'Property') continue;
+
+      const importedName = this.getPropertyName(prop.key);
+      const localName = this.getPatternBindingName(prop.value);
+
+      if (localName && importedName === '$') {
+        templateTagAliases.add(localName);
+      }
+    }
+  }
+
   getPatternBindingName(node) {
     if (!node) return null;
     if (node.type === 'Identifier') return node.name;
@@ -531,6 +607,14 @@ class CommandExecAnalyzer extends BaseAnalyzer {
     return source === 'child_process' || source === 'node:child_process';
   }
 
+  isZxModule(source) {
+    return source === 'zx';
+  }
+
+  isZxGlobalsModule(source) {
+    return source === 'zx/globals';
+  }
+
   isRequireOf(node, moduleName) {
     return node?.type === 'CallExpression' &&
       node.callee?.name === 'require' &&
@@ -539,6 +623,7 @@ class CommandExecAnalyzer extends BaseAnalyzer {
 
   moduleNameMatches(source, moduleName) {
     if (moduleName === 'child_process') return this.isChildProcessModule(source);
+    if (moduleName === 'zx') return this.isZxModule(source);
     return source === moduleName || source === `node:${moduleName}`;
   }
 
@@ -548,6 +633,14 @@ class CommandExecAnalyzer extends BaseAnalyzer {
 
     const propName = this.getPropertyName(node.property);
     return this.execSinks.has(propName) ? propName : null;
+  }
+
+  getRequiredTemplateTagName(node) {
+    if (node?.type !== 'MemberExpression') return null;
+    if (!this.isRequireOf(node.object, 'zx')) return null;
+
+    const propName = this.getPropertyName(node.property);
+    return propName === '$' ? propName : null;
   }
 
   /**
@@ -753,6 +846,61 @@ class CommandExecAnalyzer extends BaseAnalyzer {
         }
       });
     }
+  }
+
+  checkNewExpression(node, isTainted, filePath, findings, mcpContext) {
+    const functionName = this.getCalleeName(node.callee);
+    if (functionName !== 'Function') return;
+
+    node.arguments.forEach(arg => {
+      const result = this.getTaintOrigin(arg, isTainted);
+      if (result) {
+        this.reportFinding(filePath, arg, 'new Function', result.origin, findings, mcpContext);
+      }
+    });
+  }
+
+  checkTaggedTemplateExpression(
+    node,
+    isTainted,
+    filePath,
+    findings,
+    mcpContext,
+    templateTagAliases = new Set(),
+    templateModuleAliases = new Set()
+  ) {
+    const functionName = this.getTemplateTagName(node.tag, templateTagAliases, templateModuleAliases);
+    if (!functionName) return;
+
+    const result = this.getTaintOrigin(node.quasi, isTainted);
+    if (result) {
+      this.reportFinding(filePath, node.quasi, functionName, result.origin, findings, mcpContext);
+    }
+  }
+
+  getCalleeName(callee) {
+    if (!callee) return '';
+    if (callee.type === 'Identifier') return callee.name;
+    if (callee.type === 'MemberExpression') return this.getPropertyName(callee.property) || '';
+    return '';
+  }
+
+  getTemplateTagName(tag, templateTagAliases, templateModuleAliases) {
+    if (!tag) return '';
+
+    if (tag.type === 'Identifier') {
+      return templateTagAliases.has(tag.name) ? tag.name : '';
+    }
+
+    if (tag.type === 'MemberExpression') {
+      const prop = this.getPropertyName(tag.property);
+      const obj = tag.object?.name;
+      if (prop === '$' && templateModuleAliases.has(obj)) {
+        return `${obj}.${prop}`;
+      }
+    }
+
+    return '';
   }
 
   /**

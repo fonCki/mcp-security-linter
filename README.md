@@ -10,13 +10,23 @@ MCP-SecLint is a static analysis tool for detecting security vulnerabilities in 
 
 MCP-SecLint detects security vulnerabilities in JavaScript and TypeScript MCP server implementations using static analysis techniques including taint tracking and middleware pattern matching. The detection rules target vulnerability patterns identified in MCP security research and the official [MCP Security Best Practices](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices).
 
+## Paper Reproducibility
+
+The IWSPA 2026 paper evaluated MCP-SecLint version `v1.4.2`. To reproduce the exact artifact used for the paper's ecosystem scan, run:
+
+```bash
+npx mcp-security-linter@1.4.2 .
+```
+
+The full ecosystem-analysis table is in [docs/ecosystem-analysis-results.md](docs/ecosystem-analysis-results.md). Current `master` may include post-paper maintenance fixes and parser improvements, so use the tagged `v1.4.2` release when reproducing the paper results.
+
 ## Features
 
 ### Currently Implemented
 
 1.  **Dangerous Command Execution Detection**
     *   **Technique**: Recursive Taint Analysis
-    *   **Detects**: Command injection via `exec`, `spawn`, `eval`, `vm.runInContext`.
+    *   **Detects**: Command injection via Node.js process APIs, `eval`, `new Function`, `vm.runInContext`, `execa`, and the `$` template tag from `zx`.
     *   **Capabilities**: Tracks untrusted input (`process.env`, MCP arguments, function args) through variable assignments, aliases, string concatenation, and template literals.
     *   **Safety**: Ignores safe hardcoded commands (e.g., `exec('ls -la')`).
 

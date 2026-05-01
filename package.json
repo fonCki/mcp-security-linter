@@ -43,6 +43,7 @@
   "license": "MIT",
   "dependencies": {
     "@typescript-eslint/typescript-estree": "^8.59.1",
+    "acorn": "^8.15.0",
     "glob": "^13.0.6",
     "minimist": "^1.2.8"
   },

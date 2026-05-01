@@ -18,7 +18,16 @@ The IWSPA 2026 paper evaluated MCP-SecLint version `v1.4.2`. To reproduce the ex
 npx mcp-security-linter@1.4.2 .
 ```
 
-The full ecosystem-analysis table is in [docs/ecosystem-analysis-results.md](docs/ecosystem-analysis-results.md). Current `master` may include post-paper maintenance fixes and parser improvements, so use the tagged `v1.4.2` release when reproducing the paper results.
+The full ecosystem-analysis table is in [docs/ecosystem-analysis-results.md](docs/ecosystem-analysis-results.md). Current `master` may include post-paper maintenance fixes, so use the tagged `v1.4.2` release when reproducing the paper results.
+
+### Parser architecture
+
+The paper (§4.3, Figure 2, Ref [20]) describes the JavaScript pipeline as built on the [Acorn](https://github.com/acornjs/acorn) parser, with a noted limitation in §7.3 that complex TypeScript files could fail AST parsing. From `v1.6.0` onward this is implemented as a hybrid that preserves the original JS pipeline:
+
+- `.js`, `.cjs`, `.mjs` files are parsed with **Acorn**, matching the architecture documented in the paper.
+- `.ts`, `.tsx`, `.mts`, `.cts`, and `.jsx` files are parsed with **`@typescript-eslint/typescript-estree`**, which closes the §7.3 limitation while leaving the JS path unchanged.
+
+Both parsers emit ESTree-shaped ASTs traversed by a single shared walker.
 
 ## Features
 

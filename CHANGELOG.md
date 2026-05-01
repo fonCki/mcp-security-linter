@@ -17,7 +17,10 @@ handler coverage that the IWSPA '26 paper describes.
 - TypeScript and JSX/TSX parsing via `@typescript-eslint/typescript-estree`.
   This addresses the limitation noted in §7.3 of the paper, where complex
   TypeScript type annotations caused `acorn` to fail and silently miss
-  findings (e.g. `hdresearch-mcp-shell`).
+  findings (e.g. `hdresearch-mcp-shell`). Acorn is preserved for the JS
+  path (see "Changed" below) so the paper's architectural description in
+  §4.3 and Figure 2 still accurately describes how `master` parses
+  JavaScript.
 - TypeScript-specific node handling in taint propagation: `TSAsExpression`,
   `TSTypeAssertion`, `TSNonNullExpression`, and `ChainExpression` no longer
   break taint flow.
@@ -72,15 +75,23 @@ handler coverage that the IWSPA '26 paper describes.
 - README "Paper Reproducibility" section pins reproduction to
   `mcp-security-linter@1.4.2` and notes that current `master` may include
   post-paper fixes.
+- **Parser pipeline is now hybrid.** Acorn (paper Ref [20]) remains the
+  parser for `.js`, `.cjs`, and `.mjs` files, preserving the architecture
+  documented in paper §4.3 and Figure 2. `@typescript-eslint/typescript-estree`
+  is used only for `.ts`, `.tsx`, `.mts`, `.cts`, and `.jsx`, where Acorn
+  cannot parse the file. Both parsers emit ESTree-shaped ASTs that flow
+  through the same custom walker. This avoids pulling the TypeScript
+  compiler into node_modules for projects that contain only JavaScript.
 
 ### Removed
 
 - `@actions/core` and `@actions/github` runtime dependencies (replaced
   by a small hand-rolled GitHub Actions protocol implementation in
   `src/action.js`). Resolves outstanding npm-audit advisories.
-- `acorn`, `acorn-walk`, and `js-yaml` runtime dependencies (replaced by
-  `@typescript-eslint/typescript-estree` + a small custom AST walker in
-  `src/analyzers/base-analyzer.js`).
+- `acorn-walk` and `js-yaml` runtime dependencies. The custom walker in
+  `src/analyzers/base-analyzer.js` traverses ESTree generically and
+  handles both Acorn output and TypeScript-estree extension nodes
+  (`TSAsExpression`, `TSNonNullExpression`, `ChainExpression`, etc.).
 - Special-file globbing for `Dockerfile`, `.env*`, and similar files in
   `src/index.js`. These were collected but never analyzed.
 

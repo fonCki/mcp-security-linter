@@ -27,10 +27,13 @@ inputs:
 outputs:
   findings-count:
     description: 'Number of security findings'
+    value: ${{ steps.linter.outputs.findings-count }}
   sarif-file:
     description: 'Path to SARIF output file'
+    value: ${{ steps.linter.outputs.sarif-file }}
   results-file:
     description: 'Path to the requested output format file'
+    value: ${{ steps.linter.outputs.results-file }}
 
 runs:
   using: 'composite'
@@ -46,6 +49,7 @@ runs:
       working-directory: ${{ github.action_path }}
 
     - name: Run linter
+      id: linter
       run: node ${{ github.action_path }}/src/action.js
       shell: bash
       env:

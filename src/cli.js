@@ -60,8 +60,10 @@ async function main() {
     console.log(output);
   }
 
-  if (findings.length > 0 && argv.format === 'console') {
-    console.log(`\nFound ${findings.length} security issue(s)`);
+  if (findings.length > 0) {
+    if (argv.format === 'console') {
+      console.log(`\nFound ${findings.length} security issue(s)`);
+    }
     process.exit(1);
   }
 }

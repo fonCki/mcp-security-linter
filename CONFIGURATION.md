@@ -2,29 +2,25 @@
 
 ## Overview
 
-MCP-SecLint uses a flexible configuration system that allows you to customize:
-- Which file types to scan
-- Which patterns indicate test files (to skip)
-- Which directories to exclude
-- Analyzer-specific settings
+MCP-SecLint supports JavaScript and TypeScript source analysis. The configuration system lets you customize:
+- Which JS/TS file extensions to scan
+- Which paths are treated as tests and skipped by analyzers
+- Which directories or files are excluded
+- Which analyzers are enabled and what severity they use
 
 ## Configuration Files
 
-### 1. `defaults.json` (Built-in)
+### Built-in defaults
 
-This file contains the default configuration used when no user config is provided. It is located at the root of the project and is automatically loaded.
+`defaults.json` contains the built-in configuration. Prefer creating a project-level `.mcp-lint.json` instead of editing the defaults.
 
-**You should NOT modify this file.** Instead, create a custom config file to override specific settings.
+### User config
 
-### 2. `.mcp-lint.json` (User Config)
-
-Create this file in your project root to customize the linter behavior. Only specify the settings you want to override - all other settings will use defaults.
-
-### 3. Custom Config Files
-
-You can specify a custom config file path using:
+Create `.mcp-lint.json` in your project root, or pass a custom path:
 - CLI: `node src/cli.js --config custom-config.json`
-- GitHub Action: `config: custom-config.json` in workflow file
+- GitHub Action: `config: custom-config.json`
+
+Only specify settings you want to override.
 
 ## Configuration Schema
 
@@ -33,7 +29,7 @@ You can specify a custom config file path using:
 ```json
 {
   "global": {
-    "fileExtensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb"],
+    "fileExtensions": [".js", ".ts", ".jsx", ".tsx"],
     "testFilePatterns": [".test.", ".spec.", "__tests__", "/tests/", "/test/"],
     "excludePatterns": [
       "**/node_modules/**",
@@ -49,57 +45,23 @@ You can specify a custom config file path using:
 
 #### `fileExtensions`
 - **Type:** Array of strings
-- **Default:** `[".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb"]`
-- **Description:** File extensions to scan. Add more extensions to support additional languages.
-
-**Example:** Add PHP and C++ files:
-```json
-{
-  "global": {
-    "fileExtensions": [".js", ".ts", ".py", ".php", ".cpp", ".c"]
-  }
-}
-```
+- **Default:** `[".js", ".ts", ".jsx", ".tsx"]`
+- **Description:** JS/TS file extensions to scan. Other languages are not supported by the current analyzers.
 
 #### `testFilePatterns`
 - **Type:** Array of strings
 - **Default:** `[".test.", ".spec.", "__tests__", "/tests/", "/test/"]`
-- **Description:** Patterns used to identify test files, which are automatically excluded from AI content detection.
-
-**Example:** Custom test patterns for your project:
-```json
-{
-  "global": {
-    "testFilePatterns": ["_test.js", ".test.js", "/testing/", "/__snapshots__/"]
-  }
-}
-```
+- **Description:** Substrings used to identify test files that analyzers should skip.
 
 #### `excludePatterns`
-- **Type:** Array of strings (glob patterns)
-- **Default:** `["**/node_modules/**", "**/dist/**", "**/.git/**", "**/tests/fixtures/**", "**/test/fixtures/**"]`
-- **Description:** Directory patterns to exclude from scanning.
-
-**Example:** Exclude additional directories:
-```json
-{
-  "global": {
-    "excludePatterns": [
-      "**/node_modules/**",
-      "**/build/**",
-      "**/vendor/**",
-      "**/.next/**"
-    ]
-  }
-}
-```
+- **Type:** Array of glob patterns
+- **Default:** excludes dependency, build, VCS, IDE, fixture, and lockfile paths
+- **Description:** Files or directories to exclude from scanning.
 
 #### `defaultSeverity`
-- **Type:** String (`"error"`, `"warning"`, or `"info"`)
+- **Type:** `"error"`, `"warning"`, or `"info"`
 - **Default:** `"warning"`
-- **Description:** Default severity level for findings.
-
----
+- **Description:** Default severity for analyzers that do not override it.
 
 ### Analyzer Settings
 
@@ -108,106 +70,59 @@ Each analyzer can be configured individually:
 ```json
 {
   "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "severity": "warning",
-      "fileExtensions": null,
-      "testFilePatterns": null,
-      "customPatterns": []
-    }
-  }
-}
-```
-
-#### Common Analyzer Options
-
-- **`enabled`**: (Boolean) Enable or disable the analyzer
-- **`severity`**: (String) Set to `"error"`, `"warning"`, or `"info"`
-- **`fileExtensions`**: (Array or null) Override global file extensions for this analyzer
-- **`testFilePatterns`**: (Array or null) Override global test patterns for this analyzer
-
-#### AI Detector Specific Options
-
-- **`customPatterns`**: (Array of RegExp patterns as strings) Additional AI tool names to detect
-
-**Example:** Detect additional AI tools:
-```json
-{
-  "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "severity": "warning",
-      "customPatterns": [
-        "\\bcursor\\b",
-        "\\btabnine\\b",
-        "\\bcodeium\\b"
-      ]
-    }
-  }
-}
-```
-
-#### Command Exec Analyzer Specific Options
-
-- **`customExecPatterns`**: (Array of RegExp patterns) Additional command execution methods to detect
-- **`customDangerousCommands`**: (Array of pattern objects) Additional dangerous command patterns
-
-**Example:** Add custom dangerous patterns:
-```json
-{
-  "analyzers": {
     "command-exec": {
       "enabled": true,
       "severity": "error",
-      "customDangerousCommands": [
-        {
-          "pattern": "sudo\\s+rm",
-          "description": "Privileged file deletion",
-          "severity": "error"
-        }
-      ],
-      "customExecPatterns": [
-        "\\bexecCommand\\s*\\(",
-        "\\brunShellScript\\s*\\("
-      ]
+      "fileExtensions": [".js", ".ts", ".jsx", ".tsx"],
+      "testFilePatterns": [".test.", ".spec.", "__tests__"]
     }
   }
 }
 ```
 
----
+Common analyzer options:
+- **`enabled`**: Enable or disable the analyzer.
+- **`severity`**: Set default severity for findings emitted by the analyzer.
+- **`fileExtensions`**: Override global file extensions for that analyzer.
+- **`testFilePatterns`**: Override global test file patterns for that analyzer.
 
-## Configuration Examples
+Built-in analyzers:
+- `command-exec`
+- `token-passthrough`
+- `unauthenticated-endpoints`
 
-### Example 1: Scan Only JavaScript/TypeScript
+## Examples
+
+### Scan only JavaScript
 
 ```json
 {
   "global": {
-    "fileExtensions": [".js", ".ts", ".jsx", ".tsx"]
+    "fileExtensions": [".js", ".jsx"]
   }
 }
 ```
 
-### Example 2: Polyglot Project (Multiple Languages)
+### Disable one analyzer
 
 ```json
 {
-  "global": {
-    "fileExtensions": [".js", ".ts", ".py", ".go", ".java", ".rb", ".php", ".rs"]
+  "analyzers": {
+    "unauthenticated-endpoints": {
+      "enabled": false
+    }
   }
 }
 ```
 
-### Example 3: Custom Test Patterns
+### Custom test patterns
 
 ```json
 {
   "global": {
     "testFilePatterns": [
-      "_spec.rb",
-      "_test.py",
-      ".test.js",
+      ".test.",
+      ".spec.",
       "/e2e/",
       "/integration/"
     ]
@@ -215,7 +130,7 @@ Each analyzer can be configured individually:
 }
 ```
 
-### Example 4: Monorepo Configuration
+### Monorepo excludes
 
 ```json
 {
@@ -231,152 +146,35 @@ Each analyzer can be configured individually:
 }
 ```
 
-### Example 5: Detect Organization-Specific AI Tools
-
-```json
-{
-  "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "severity": "warning",
-      "customPatterns": [
-        "\\binternal-ai-assistant\\b",
-        "\\bcompany-copilot\\b"
-      ]
-    }
-  }
-}
-```
-
-### Example 6: Disable AI Detection for Test Files Only
-
-```json
-{
-  "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "testFilePatterns": [".test.", ".spec.", "__tests__"]
-    }
-  }
-}
-```
-
-### Example 7: Scan Everything (Including Tests)
-
-```json
-{
-  "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "testFilePatterns": []
-    }
-  }
-}
-```
-
----
-
 ## Configuration Merging
 
-The linter uses a **merge strategy** for configuration:
+The linter merges configuration in this order:
+1. Load `defaults.json`.
+2. Merge `.mcp-lint.json` or the custom config file.
+3. Apply the merged settings to analyzers.
 
-1. Load `defaults.json` (built-in defaults)
-2. Merge with user config file (`.mcp-lint.json` or custom path)
-3. Apply to linter
-
-**Merge Rules:**
-- User config **overrides** defaults for specified keys
-- Unspecified keys use defaults
-- Arrays are **replaced** (not merged) when specified in user config
-
-**Example:**
-
-**defaults.json:**
-```json
-{
-  "global": {
-    "fileExtensions": [".js", ".ts"],
-    "testFilePatterns": [".test."]
-  }
-}
-```
-
-**User .mcp-lint.json:**
-```json
-{
-  "global": {
-    "fileExtensions": [".py", ".rb"]
-  }
-}
-```
-
-**Resulting config:**
-```json
-{
-  "global": {
-    "fileExtensions": [".py", ".rb"],
-    "testFilePatterns": [".test."]
-  }
-}
-```
-
----
-
-## Backward Compatibility
-
-The old configuration format (flat structure) is still supported:
+Merge rules:
+- User config overrides defaults for specified keys.
+- Unspecified keys use defaults.
+- Arrays are replaced, not merged.
+- The legacy flat analyzer format is still supported:
 
 ```json
 {
-  "ai-detector": {
-    "enabled": true,
-    "severity": "warning"
+  "command-exec": {
+    "enabled": false
   }
 }
 ```
-
-This format automatically maps to the new structure:
-```json
-{
-  "analyzers": {
-    "ai-detector": {
-      "enabled": true,
-      "severity": "warning"
-    }
-  }
-}
-```
-
----
-
-## Best Practices
-
-1. **Start Small**: Only override settings you need to change
-2. **Use Comments**: Add `"description"` fields to document your choices
-3. **Version Control**: Commit `.mcp-lint.json` to share config with your team
-4. **Test Locally**: Run `node src/cli.js` to verify config works before CI/CD
-5. **Update Gradually**: Add more file types and patterns as your project evolves
-
----
 
 ## Troubleshooting
 
 ### "No files found to scan"
-- Check `global.fileExtensions` includes your file types
-- Verify `global.excludePatterns` isn't excluding your source directory
+- Check that `global.fileExtensions` includes your JS/TS file extension.
+- Check that `global.excludePatterns` is not excluding your source directory.
 
 ### "Test files are being scanned"
-- Add patterns to `global.testFilePatterns` or analyzer-specific `testFilePatterns`
+- Add patterns to `global.testFilePatterns` or analyzer-specific `testFilePatterns`.
 
-### "Custom patterns not working"
-- Ensure regex patterns are properly escaped: `\\b` instead of `\b`
-- Use `customPatterns` array, not `patterns` (which is reserved for built-in patterns)
-
----
-
-## Version Information
-
-This configuration system was introduced in **v1.1.0** and uses:
-- `defaults.json` for built-in defaults
-- Dynamic version from `package.json` in SARIF output
-- Auto-discovery of analyzers from `src/analyzers/` directory
+### "Non-JS/TS files are not scanned"
+- This is expected in the current release. The active analyzers support JavaScript and TypeScript syntax only.

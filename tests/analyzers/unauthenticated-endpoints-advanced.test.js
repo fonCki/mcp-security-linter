@@ -65,6 +65,38 @@ describe('UnauthenticatedEndpointsAnalyzer (Advanced)', () => {
         expect(findings).toHaveLength(0);
     });
 
+    test('should handle inline middleware arrays with auth', () => {
+        const code = `
+      app.get('/api', [logger, requireAuth, parser], (req, res) => {
+        res.send('ok');
+      });
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(0);
+    });
+
+    test('should not treat check-prefixed middleware as authentication', () => {
+        const code = `
+      app.get('/private', checkInput, (req, res) => {
+        res.send('ok');
+      });
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain('GET /private');
+    });
+
+    test('should flag inline middleware arrays without auth', () => {
+        const code = `
+      app.get('/private', [validateInput, parseBody], (req, res) => {
+        res.send('ok');
+      });
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain('GET /private');
+    });
+
     test('should handle mounted routers with auth', () => {
         const code = `
       const apiRouter = express.Router();

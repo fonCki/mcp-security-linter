@@ -64,6 +64,39 @@ describe('CommandExecAnalyzer (Advanced)', () => {
         expect(findings).toHaveLength(1);
     });
 
+    test('should detect CommonJS child_process destructured aliases', () => {
+        const code = `
+      const { exec: run } = require('child_process');
+      const command = process.env.CMD;
+      run(command);
+    `;
+        const findings = analyzer.analyze('test.js', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain("'run'");
+    });
+
+    test('should detect ESM child_process import aliases in TypeScript', () => {
+        const code = `
+      import { exec as run } from 'child_process';
+      const command: string = process.env.CMD as string;
+      run(command);
+    `;
+        const findings = analyzer.analyze('test.ts', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain("'run'");
+    });
+
+    test('should detect child_process namespace aliases', () => {
+        const code = `
+      const processTools = require('child_process');
+      const command = process.env.CMD;
+      processTools.exec(command);
+    `;
+        const findings = analyzer.analyze('test.js', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain('processTools.exec');
+    });
+
     test('should NOT flag safe hardcoded commands', () => {
         const code = `
       const { exec } = require('child_process');
@@ -83,6 +116,17 @@ describe('CommandExecAnalyzer (Advanced)', () => {
       // Let's assume 'dir' is defined as a literal string in the same scope.
     `;
         // If our analyzer is smart, it sees 'dir' comes from literal 'safe_dir'.
+        const findings = analyzer.analyze('test.js', code);
+        expect(findings).toHaveLength(0);
+    });
+
+    test('should clear taint when a variable is reassigned to a safe literal', () => {
+        const code = `
+      const { exec } = require('child_process');
+      let command = process.env.CMD;
+      command = 'ls -la';
+      exec(command);
+    `;
         const findings = analyzer.analyze('test.js', code);
         expect(findings).toHaveLength(0);
     });

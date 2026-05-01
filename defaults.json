@@ -6,22 +6,7 @@
       ".js",
       ".ts",
       ".jsx",
-      ".tsx",
-      ".py",
-      ".java",
-      ".go",
-      ".rb",
-      ".json",
-      ".env",
-      ".env.example",
-      ".env.local",
-      ".env.production",
-      ".yml",
-      ".yaml",
-      ".sh",
-      ".bash",
-      ".zsh",
-      ".dockerfile"
+      ".tsx"
     ],
     "excludePatterns": [
       "**/node_modules/**",
@@ -52,15 +37,7 @@
         ".js",
         ".ts",
         ".jsx",
-        ".tsx",
-        ".py",
-        ".java",
-        ".go",
-        ".rb",
-        ".sh",
-        ".bash",
-        ".zsh",
-        ".json"
+        ".tsx"
       ]
     },
     "token-passthrough": {

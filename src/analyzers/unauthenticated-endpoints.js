@@ -13,7 +13,6 @@ const AUTH_MIDDLEWARE_PATTERNS = [
     /protect/i,
     /guard/i,
     /verify/i,
-    /check/i,
     /login/i,
     /signin/i,
     /admin/i
@@ -37,7 +36,7 @@ class UnauthenticatedEndpointsAnalyzer extends BaseAnalyzer {
             return [];
         }
 
-        const ast = this.parseAST(content);
+        const ast = this.parseAST(content, filePath);
         if (!ast) {
             return [];
         }
@@ -104,9 +103,7 @@ class UnauthenticatedEndpointsAnalyzer extends BaseAnalyzer {
 
             VariableDeclarator(node) {
                 if (node.id.type === 'Identifier' && node.init && node.init.type === 'ArrayExpression') {
-                    const hasAuth = node.init.elements.some(el => {
-                        return el.type === 'Identifier' && self.isAuthMiddleware(el.name);
-                    });
+                    const hasAuth = self.collectMiddlewareNames(node.init).some(name => self.isAuthMiddleware(name));
                     if (hasAuth) authGroups.add(node.id.name);
                 }
             }
@@ -175,12 +172,7 @@ class UnauthenticatedEndpointsAnalyzer extends BaseAnalyzer {
         const localMiddleware = [];
 
         for (const arg of middlewareArgs) {
-            if (arg.type === 'Identifier') {
-                localMiddleware.push(arg.name);
-            } else if (arg.type === 'CallExpression') {
-                if (arg.callee.type === 'Identifier') localMiddleware.push(arg.callee.name);
-                else if (arg.callee.type === 'MemberExpression') localMiddleware.push(arg.callee.property.name);
-            }
+            localMiddleware.push(...this.collectMiddlewareNames(arg));
         }
 
         routes.push({
@@ -196,6 +188,36 @@ class UnauthenticatedEndpointsAnalyzer extends BaseAnalyzer {
     isAuthMiddleware(name, authGroups) {
         if (authGroups && authGroups.has(name)) return true;
         return this.authPatterns.some(pattern => pattern.test(name));
+    }
+
+    collectMiddlewareNames(node) {
+        if (!node) return [];
+
+        if (node.type === 'Identifier') {
+            return [node.name];
+        }
+
+        if (node.type === 'CallExpression') {
+            if (node.callee.type === 'Identifier') return [node.callee.name];
+            if (node.callee.type === 'MemberExpression') return [this.getPropertyName(node.callee.property)].filter(Boolean);
+        }
+
+        if (node.type === 'ArrayExpression') {
+            return node.elements.flatMap(element => this.collectMiddlewareNames(element));
+        }
+
+        if (node.type === 'SpreadElement') {
+            return this.collectMiddlewareNames(node.argument);
+        }
+
+        return [];
+    }
+
+    getPropertyName(node) {
+        if (!node) return null;
+        if (node.type === 'Identifier') return node.name;
+        if (node.type === 'Literal') return node.value;
+        return null;
     }
 
     shouldAnalyze(filePath) {

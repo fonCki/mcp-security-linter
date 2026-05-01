@@ -1,7 +1,13 @@
 const fs = require('fs');
-const path = require('path');
-const acorn = require('acorn');
-const walk = require('acorn-walk');
+const { parse } = require('@typescript-eslint/typescript-estree');
+
+const TRAVERSAL_SKIP_KEYS = new Set([
+  'comments',
+  'loc',
+  'parent',
+  'range',
+  'tokens'
+]);
 
 class BaseAnalyzer {
   constructor(name, options = {}) {
@@ -36,24 +42,62 @@ class BaseAnalyzer {
     };
   }
 
-  parseAST(content) {
+  parseAST(content, filePath = 'file.js') {
     try {
-      return acorn.parse(content, {
-        ecmaVersion: 2022,
+      return parse(content, {
+        comment: false,
+        errorOnTypeScriptSyntacticAndSemanticIssues: false,
+        filePath,
+        jsx: true,
+        loc: true,
+        range: true,
         sourceType: 'module',
-        locations: true,
-        ranges: true,
-        allowHashBang: true  // Handle #!/usr/bin/env node shebangs
+        tokens: false
       });
     } catch (error) {
-      // Fallback or silence error for non-JS files or syntax errors
       return null;
     }
   }
 
-  walkAST(ast, visitors) {
+  walkAST(ast, visitors, state = null) {
     if (!ast) return;
-    walk.simple(ast, visitors);
+    this.traverseAST(ast, state, visitors, false);
+  }
+
+  walkRecursiveAST(ast, state, visitors) {
+    if (!ast) return;
+    this.traverseAST(ast, state, visitors, true);
+  }
+
+  traverseAST(node, state, visitors, visitorControlsChildren) {
+    if (!this.isASTNode(node)) return;
+
+    const visitor = visitors[node.type];
+    const visitChild = child => this.traverseAST(child, state, visitors, visitorControlsChildren);
+
+    if (visitor) {
+      visitor(node, state, visitChild);
+      if (visitorControlsChildren) return;
+    }
+
+    this.traverseChildren(node, state, visitors, visitorControlsChildren);
+  }
+
+  traverseChildren(node, state, visitors, visitorControlsChildren) {
+    Object.keys(node).forEach(key => {
+      if (TRAVERSAL_SKIP_KEYS.has(key)) return;
+
+      const value = node[key];
+      if (Array.isArray(value)) {
+        value.forEach(child => this.traverseAST(child, state, visitors, visitorControlsChildren));
+      } else {
+        this.traverseAST(value, state, visitors, visitorControlsChildren);
+      }
+    });
+  }
+
+  isASTNode(value) {
+    return value && typeof value.type === 'string';
   }
 }
 

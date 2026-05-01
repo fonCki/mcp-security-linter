@@ -1,6 +1,5 @@
 const BaseAnalyzer = require('./base-analyzer');
 const path = require('path');
-const walk = require('acorn-walk');
 
 const NAME = 'token-passthrough';
 
@@ -29,7 +28,7 @@ class TokenPassthroughAnalyzer extends BaseAnalyzer {
             return [];
         }
 
-        const ast = this.parseAST(content);
+        const ast = this.parseAST(content, filePath);
         if (!ast) {
             return [];
         }
@@ -94,6 +93,15 @@ class TokenPassthroughAnalyzer extends BaseAnalyzer {
 
             taint(name, origin) {
                 this.getCurrentScope().set(name, origin);
+            },
+
+            untaint(name) {
+                for (let i = this.scopeStack.length - 1; i >= 0; i--) {
+                    if (this.scopeStack[i].has(name)) {
+                        this.scopeStack[i].delete(name);
+                        return;
+                    }
+                }
             },
 
             pushScope() {
@@ -176,6 +184,7 @@ class TokenPassthroughAnalyzer extends BaseAnalyzer {
                     } else {
                         const result = self.getTaintOrigin(node.right, st.isTainted.bind(st));
                         if (result) st.taint(varName, result.origin);
+                        else if (self.isDefinitelySafeExpression(node.right)) st.untaint(varName);
                     }
                 }
                 c(node.right, st);
@@ -202,7 +211,7 @@ class TokenPassthroughAnalyzer extends BaseAnalyzer {
             }
         };
 
-        walk.recursive(ast, state, visitors);
+        this.walkRecursiveAST(ast, state, visitors);
 
         return { findings, newFunctionTaints };
     }
@@ -221,6 +230,13 @@ class TokenPassthroughAnalyzer extends BaseAnalyzer {
     // Returns { origin: string, source: Node } or null
     getTaintOrigin(node, isTainted) {
         if (!node) return null;
+
+        if (node.type === 'TSAsExpression' ||
+            node.type === 'TSTypeAssertion' ||
+            node.type === 'TSNonNullExpression' ||
+            node.type === 'ChainExpression') {
+            return this.getTaintOrigin(node.expression, isTainted);
+        }
 
         if (node.type === 'Identifier') {
             const origin = isTainted(node.name);
@@ -266,6 +282,37 @@ class TokenPassthroughAnalyzer extends BaseAnalyzer {
         if (this.isProcessEnv(node)) return { origin: 'process.env', source: node };
 
         return null;
+    }
+
+    isDefinitelySafeExpression(node) {
+        if (!node) return false;
+
+        if (node.type === 'TSAsExpression' ||
+            node.type === 'TSTypeAssertion' ||
+            node.type === 'TSNonNullExpression' ||
+            node.type === 'ChainExpression') {
+            return this.isDefinitelySafeExpression(node.expression);
+        }
+
+        if (node.type === 'Literal') return true;
+
+        if (node.type === 'TemplateLiteral') {
+            return node.expressions.every(expr => this.isDefinitelySafeExpression(expr));
+        }
+
+        if (node.type === 'ArrayExpression') {
+            return node.elements.every(el => !el || this.isDefinitelySafeExpression(el));
+        }
+
+        if (node.type === 'ObjectExpression') {
+            return node.properties.every(prop => prop.type === 'Property' && this.isDefinitelySafeExpression(prop.value));
+        }
+
+        if (node.type === 'BinaryExpression' || node.type === 'LogicalExpression') {
+            return this.isDefinitelySafeExpression(node.left) && this.isDefinitelySafeExpression(node.right);
+        }
+
+        return false;
     }
 
     isSensitiveName(name) {

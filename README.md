@@ -8,25 +8,25 @@ MCP-SecLint is a static analysis tool for detecting security vulnerabilities in 
 
 ## Overview
 
-MCP-SecLint detects security vulnerabilities in MCP server implementations using static analysis techniques including taint tracking, control flow analysis, and middleware pattern matching. The detection rules target vulnerability patterns identified in MCP security research and the official [MCP Security Best Practices](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices).
+MCP-SecLint detects security vulnerabilities in JavaScript and TypeScript MCP server implementations using static analysis techniques including taint tracking and middleware pattern matching. The detection rules target vulnerability patterns identified in MCP security research and the official [MCP Security Best Practices](https://modelcontextprotocol.io/specification/draft/basic/security_best_practices).
 
 ## Features
 
-### Currently Implemented (Advanced Analysis)
+### Currently Implemented
 
-1.  **Dangerous Command Execution Detection** ✅
+1.  **Dangerous Command Execution Detection**
     *   **Technique**: Recursive Taint Analysis
     *   **Detects**: Command injection via `exec`, `spawn`, `eval`, `vm.runInContext`.
-    *   **Capabilities**: Tracks untrusted input (`process.env`, function args) through variable assignments, string concatenation, and template literals.
+    *   **Capabilities**: Tracks untrusted input (`process.env`, MCP arguments, function args) through variable assignments, aliases, string concatenation, and template literals.
     *   **Safety**: Ignores safe hardcoded commands (e.g., `exec('ls -la')`).
 
-2.  **Token Passthrough Detection** ✅
+2.  **Token Passthrough Detection**
     *   **Technique**: Iterative Taint Analysis (Fixpoint)
     *   **Detects**: Sensitive data (API keys, secrets) passed to logging functions or external network requests.
     *   **Capabilities**: Tracks secrets through complex data flows, including object/array wrapping and ternary operators.
     *   **Scope**: Respects variable scope and shadowing.
 
-3.  **Unauthenticated Endpoints Detection** ✅
+3.  **Unauthenticated Endpoints Detection**
     *   **Technique**: Middleware Stack Simulation
     *   **Detects**: API endpoints exposed without authentication middleware.
     *   **Capabilities**: Understands `app.use()` order, router mounting hierarchies, and route-specific middleware.
@@ -35,9 +35,9 @@ MCP-SecLint detects security vulnerabilities in MCP server implementations using
 
 The following checks are planned for future releases:
 
-4.  **OAuth Hygiene Checker** ❌
+4.  **OAuth Hygiene Checker**
     *   *Goal*: Ensure proper handling of OAuth tokens and scopes.
-5.  **Argument Validation** ❌
+5.  **Argument Validation**
     *   *Goal*: Verify that all user inputs are validated before use.
 
 ---
@@ -89,7 +89,7 @@ jobs:
   security-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: fonCki/mcp-security-linter@master
         with:
           path: '.'
@@ -116,6 +116,8 @@ cd mcp-security-linter
 npm install
 ```
 
+Requires Node.js 18.18.0 or newer.
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ## Usage
@@ -129,6 +131,8 @@ node src/cli.js src/                      # Analyze specific path
 node src/cli.js --format sarif --output results.sarif  # SARIF output
 node src/cli.js --config .mcp-lint.json   # Use custom config
 ```
+
+The CLI exits with status code `1` when findings are present, regardless of output format.
 
 ### Configuration
 
@@ -150,10 +154,10 @@ Create `.mcp-lint.json` (optional):
 ```
 
 **Advanced Configuration (v1.1.0+):**
-- 📁 Custom file extensions (scan any language)
-- 🧪 Custom test patterns (skip test files)
-- 🚫 Custom exclude patterns (ignore directories)
-- ⚙️ Analyzer-specific overrides
+- Custom JavaScript/TypeScript file extensions
+- Custom test patterns
+- Custom exclude patterns
+- Analyzer-specific overrides
 
 See **[CONFIGURATION.md](CONFIGURATION.md)** for examples and detailed documentation.
 

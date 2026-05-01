@@ -23,7 +23,7 @@ class UnauthenticatedEndpointsAnalyzer extends BaseAnalyzer {
         super(NAME, options);
 
         const globalConfig = options.globalConfig || {};
-        this.extensions = options.fileExtensions || globalConfig.fileExtensions || ['.js', '.ts', '.jsx', '.tsx'];
+        this.extensions = options.fileExtensions || globalConfig.fileExtensions || ['.js', '.cjs', '.mjs', '.ts', '.tsx', '.mts', '.cts', '.jsx'];
         this.testPatterns = options.testFilePatterns || globalConfig.testFilePatterns || ['.test.', '.spec.', '__tests__'];
 
         this.authPatterns = options.customAuthPatterns ?
@@ -89,9 +89,15 @@ class UnauthenticatedEndpointsAnalyzer extends BaseAnalyzer {
                                         stackSnapshot: getSnapshot(objName)
                                     });
                                 }
-                            } else if (arg.type === 'CallExpression') {
-                                if (arg.callee.type === 'Identifier' && self.isAuthMiddleware(arg.callee.name, authGroups)) {
-                                    addToStack(objName, arg.callee.name);
+                            } else {
+                                // CallExpression / ArrayExpression / SpreadElement etc.
+                                // Reuse collectMiddlewareNames so middleware applied
+                                // through member-expression callees (e.g.
+                                // passport.authenticate('jwt')) is recognized.
+                                const candidateNames = self.collectMiddlewareNames(arg);
+                                const authName = candidateNames.find(name => self.isAuthMiddleware(name, authGroups));
+                                if (authName) {
+                                    addToStack(objName, authName);
                                 }
                             }
                         });

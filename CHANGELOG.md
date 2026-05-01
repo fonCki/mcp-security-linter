@@ -80,8 +80,10 @@ handler coverage that the IWSPA '26 paper describes.
   documented in paper §4.3 and Figure 2. `@typescript-eslint/typescript-estree`
   is used only for `.ts`, `.tsx`, `.mts`, `.cts`, and `.jsx`, where Acorn
   cannot parse the file. Both parsers emit ESTree-shaped ASTs that flow
-  through the same custom walker. This avoids pulling the TypeScript
-  compiler into node_modules for projects that contain only JavaScript.
+  through the same custom walker. The TypeScript compiler is still pulled
+  in transitively as a peer dependency of typescript-estree (~24 MB in
+  node_modules); the hybrid is justified by paper-architecture fidelity,
+  not by install footprint.
 
 ### Removed
 
@@ -104,9 +106,11 @@ handler coverage that the IWSPA '26 paper describes.
 
 ### Compatibility
 
-- Minimum Node version is now `>=18.18.0` (was `>=14.0.0`). Node 14 and
-  16 reached end-of-life in 2023; the prior floor did not match the
-  actual runtime requirements of the `glob` and `acorn` versions in use.
+- Minimum Node version is now `>=20.19.0` (was `>=14.0.0`). The floor is
+  set by `eslint-visitor-keys@^5`, which is pulled in transitively by
+  `@typescript-eslint/typescript-estree`. Node 14, 16, and 18 are all
+  past end-of-life. Anyone running on a supported LTS (20.x or 22.x) is
+  unaffected.
 - Public action inputs (`path`, `config`, `fail-on-warnings`,
   `output-format`, `github-token`) are unchanged.
 

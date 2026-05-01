@@ -107,13 +107,25 @@ on: [push, pull_request]
 jobs:
   security-lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # required to upload SARIF to GitHub Code Scanning
     steps:
       - uses: actions/checkout@v4
-      - uses: fonCki/mcp-security-linter@master
+      - uses: fonCki/mcp-security-linter@v1.6.0
+        id: lint
         with:
           path: '.'
           fail-on-warnings: true
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.lint.outputs.sarif-file }}
+          category: mcp-security
 ```
+
+> **Note**: SARIF upload to GitHub Code Scanning requires either a public repository or GitHub Advanced Security enabled on private repos. Without it, the action still runs and reports findings as workflow annotations, but the SARIF upload step will fail.
 
 #### Step 3: Commit and push
 

@@ -4,9 +4,13 @@
   "global": {
     "fileExtensions": [
       ".js",
+      ".cjs",
+      ".mjs",
       ".ts",
-      ".jsx",
-      ".tsx"
+      ".tsx",
+      ".mts",
+      ".cts",
+      ".jsx"
     ],
     "excludePatterns": [
       "**/node_modules/**",
@@ -35,9 +39,13 @@
       "severity": "error",
       "fileExtensions": [
         ".js",
+        ".cjs",
+        ".mjs",
         ".ts",
-        ".jsx",
-        ".tsx"
+        ".tsx",
+        ".mts",
+        ".cts",
+        ".jsx"
       ]
     },
     "token-passthrough": {

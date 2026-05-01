@@ -68,7 +68,8 @@ handler coverage that the IWSPA '26 paper describes.
   are not valid in POSIX env-var names, so the previous mapping was
   silently using defaults.
 - `actions/setup-node@v3` → `@v4`, and the action now runs on Node 20.
-- Default file extensions narrowed to `.js`, `.ts`, `.jsx`, `.tsx`. The
+- Default file extensions narrowed to the JS/TS family:
+  `.js`, `.cjs`, `.mjs`, `.ts`, `.tsx`, `.mts`, `.cts`, `.jsx`. The
   prior list of `.py`, `.java`, `.go`, `.rb`, `.sh`, `.yml`, `.env`, etc.
   was never actually parsed (analyzers are JS-AST only) and produced no
   findings; the narrower default reflects what the tool actually does.

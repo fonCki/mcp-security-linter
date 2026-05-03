@@ -6,6 +6,27 @@ The IWSPA '26 paper artifact is **v1.4.2**. Releases after that may include
 post-paper maintenance fixes; pin to `npx mcp-security-linter@1.4.2` when
 reproducing the paper's ecosystem scan.
 
+## [1.6.1] - 2026-05-03
+
+Documentation-only release. No code or behavior changes.
+
+### Changed
+
+- Added Nicola Dragoni (advisor, DTU Compute) to the project team
+  across `LICENSE`, `README.md`, `TEAM.md`, `CONTRIBUTING.md`, and
+  `package.json` `author` / `contributors` fields.
+- Corrected Zachary Kang's identity everywhere from the legacy
+  `zkjh@u.nus.edu` / `s251598` to the canonical `e1122217@u.nus.edu` /
+  `e1122217` matching the IWSPA '26 paper. The `s251598` student ID
+  in older docs was a DTU-format ID, but Zachary is at the National
+  University of Singapore — `e1122217` is the correct NUS student
+  number and the email used in the paper.
+- Bumped `LICENSE` copyright year range to 2025-2026.
+- Added a `Maintainers` section to `CONTRIBUTING.md` with current
+  contact info for all four people.
+- Added a Publication block to `TEAM.md` referencing IWSPA '26 and
+  DOI 10.1145/3806007.3810961, plus the npm registry link.
+
 ## [1.6.0] - 2026-05-03
 
 This release stabilizes JS/TS analysis, removes vulnerable runtime

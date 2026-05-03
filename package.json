@@ -1,6 +1,6 @@
 {
   "name": "mcp-security-linter",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "MCP-SecLint: Static analysis tool for detecting vulnerabilities in MCP server implementations",
   "main": "src/index.js",
   "bin": {

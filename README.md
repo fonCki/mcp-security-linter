@@ -147,7 +147,7 @@ cd mcp-security-linter
 npm install
 ```
 
-Requires Node.js 18.18.0 or newer.
+Requires Node.js 20.19.0 or newer.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 

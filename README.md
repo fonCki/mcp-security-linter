@@ -212,9 +212,10 @@ This project is developed as part of DTU Course 02234 - Research Topics in Cyber
 For detailed team information, contributions, and contact details, see [TEAM.md](TEAM.md).
 
 **Team Members:**
-- Melissa Safari (s224818)
-- Zachary Kang (s251598)
-- Alfonso Pedro Ridao (s243942)
+- Melissa Safari (s224818) — DTU Compute
+- Zachary Kang (e1122217) — National University of Singapore
+- Alfonso Pedro Ridao (s243942) — DTU Compute
+- Nicola Dragoni — DTU Compute (advisor)
 
 ## License
 

@@ -1,5 +1,16 @@
 # Contributing to MCP-SecLint
 
+Thanks for your interest in contributing! This document covers analyzer plugins, tests, code style, and PR conventions. For team contact information, see [TEAM.md](TEAM.md).
+
+## Maintainers
+
+- Melissa Safari <s224818@dtu.dk> — DTU Compute
+- Zachary Kang <e1122217@u.nus.edu> — National University of Singapore
+- Alfonso Pedro Ridao <s243942@dtu.dk> — DTU Compute
+- Nicola Dragoni <ndra@dtu.dk> — DTU Compute (advisor)
+
+For non-trivial changes, please open an issue first to discuss the approach before submitting a PR.
+
 ## Adding a New Analyzer
 
 1. Create a new file in `src/analyzers/`

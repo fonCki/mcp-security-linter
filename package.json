@@ -25,7 +25,7 @@
     "code-analysis",
     "vulnerability-scanner"
   ],
-  "author": "Melissa Safari, Zachary Kang, Alfonso Pedro Ridao",
+  "author": "Melissa Safari, Zachary Kang, Alfonso Pedro Ridao, Nicola Dragoni",
   "contributors": [
     {
       "name": "Melissa Safari",
@@ -33,11 +33,15 @@
     },
     {
       "name": "Zachary Kang",
-      "email": "zkjh@u.nus.edu"
+      "email": "e1122217@u.nus.edu"
     },
     {
       "name": "Alfonso Pedro Ridao",
       "email": "s243942@dtu.dk"
+    },
+    {
+      "name": "Nicola Dragoni",
+      "email": "ndra@dtu.dk"
     }
   ],
   "license": "MIT",

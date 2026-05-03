@@ -4,24 +4,13 @@
   "global": {
     "fileExtensions": [
       ".js",
+      ".cjs",
+      ".mjs",
       ".ts",
-      ".jsx",
       ".tsx",
-      ".py",
-      ".java",
-      ".go",
-      ".rb",
-      ".json",
-      ".env",
-      ".env.example",
-      ".env.local",
-      ".env.production",
-      ".yml",
-      ".yaml",
-      ".sh",
-      ".bash",
-      ".zsh",
-      ".dockerfile"
+      ".mts",
+      ".cts",
+      ".jsx"
     ],
     "excludePatterns": [
       "**/node_modules/**",
@@ -50,17 +39,13 @@
       "severity": "error",
       "fileExtensions": [
         ".js",
+        ".cjs",
+        ".mjs",
         ".ts",
-        ".jsx",
         ".tsx",
-        ".py",
-        ".java",
-        ".go",
-        ".rb",
-        ".sh",
-        ".bash",
-        ".zsh",
-        ".json"
+        ".mts",
+        ".cts",
+        ".jsx"
       ]
     },
     "token-passthrough": {

@@ -115,19 +115,6 @@ class MCPSecurityLinter {
       files = files.concat(glob.sync(extPattern, globOptions));
     }
 
-    // Match specific filenames without extensions or with dot prefix
-    const specialFiles = [
-      'Dockerfile', 'dockerfile',
-      '.env', '.env.local', '.env.production', '.env.development', '.env.test',
-      '.gitignore', '.dockerignore',
-      'mcp-config.json', '.mcp-config.json'
-    ];
-
-    specialFiles.forEach(filename => {
-      const filePattern = path.join(targetPath, `**/${filename}`);
-      files = files.concat(glob.sync(filePattern, globOptions));
-    });
-
     // Remove duplicates and return
     return [...new Set(files)];
   }

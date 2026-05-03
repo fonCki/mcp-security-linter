@@ -1,6 +1,6 @@
 {
   "name": "mcp-security-linter",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "MCP-SecLint: Static analysis tool for detecting vulnerabilities in MCP server implementations",
   "main": "src/index.js",
   "bin": {
@@ -21,7 +21,6 @@
     "static-analysis",
     "github-action",
     "model-context-protocol",
-    "ai-detection",
     "security-scanner",
     "code-analysis",
     "vulnerability-scanner"
@@ -43,19 +42,16 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.10.0",
-    "@actions/github": "^5.1.1",
+    "@typescript-eslint/typescript-estree": "^8.59.1",
     "acorn": "^8.15.0",
-    "acorn-walk": "^8.3.4",
-    "glob": "^10.3.10",
-    "js-yaml": "^4.1.0",
+    "glob": "^13.0.6",
     "minimist": "^1.2.8"
   },
   "devDependencies": {
     "jest": "^29.7.0"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.19.0"
   },
   "repository": {
     "type": "git",

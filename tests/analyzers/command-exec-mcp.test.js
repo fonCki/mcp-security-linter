@@ -67,6 +67,36 @@ describe('CommandExecAnalyzer - MCP Patterns', () => {
   });
 
   describe('MCP Handler Patterns', () => {
+    test('should detect server.tool destructured handler params', () => {
+      const code = `
+        const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
+        const { execSync } = require("child_process");
+        const server = new McpServer({});
+
+        server.tool("read_file", async ({ path }) => {
+          return execSync("cat " + path);
+        });
+      `;
+      const findings = analyzer.analyze('test.js', code);
+      expect(findings.length).toBeGreaterThan(0);
+      expect(findings[0].message).toContain('path');
+    });
+
+    test('should detect registerTool identifier handler params', () => {
+      const code = `
+        const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
+        const { execSync } = require("child_process");
+        const server = new McpServer({});
+
+        server.registerTool("read_file", {}, async (toolArgs) => {
+          return execSync("cat " + toolArgs.path);
+        });
+      `;
+      const findings = analyzer.analyze('test.js', code);
+      expect(findings.length).toBeGreaterThan(0);
+      expect(findings[0].message).toContain('toolArgs');
+    });
+
     test('should detect fallbackRequestHandler with exec', () => {
       const code = `
         const { Server } = require("@modelcontextprotocol/sdk/server/index.js");

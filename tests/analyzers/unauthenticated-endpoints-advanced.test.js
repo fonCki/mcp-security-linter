@@ -23,6 +23,42 @@ describe('UnauthenticatedEndpointsAnalyzer (Advanced)', () => {
         expect(findings).toHaveLength(0);
     });
 
+    test('should recognize app.use(passport.authenticate(...)) as auth', () => {
+        // Regression test: prior versions only inspected Identifier callees
+        // inside app.use(), so member-expression auth like
+        // passport.authenticate('jwt') was missed and routes were falsely
+        // flagged as unauthenticated.
+        const code = `
+      const express = require('express');
+      const passport = require('passport');
+      const app = express();
+
+      app.use(passport.authenticate('jwt'));
+
+      app.get('/private', (req, res) => res.send('protected'));
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(0);
+    });
+
+    test('should still flag routes when app.use middleware is non-auth', () => {
+        // Negative control for the previous test: a plausible-looking
+        // member-expression callee that does NOT match any auth pattern
+        // must NOT cover later routes.
+        const code = `
+      const express = require('express');
+      const bodyParser = require('body-parser');
+      const app = express();
+
+      app.use(bodyParser.json());
+
+      app.get('/private', (req, res) => res.send('not protected'));
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain('/private');
+    });
+
     test('should respect router-level middleware', () => {
         const code = `
       const router = express.Router();
@@ -63,6 +99,38 @@ describe('UnauthenticatedEndpointsAnalyzer (Advanced)', () => {
     `;
         const findings = analyzer.analyze('app.js', code);
         expect(findings).toHaveLength(0);
+    });
+
+    test('should handle inline middleware arrays with auth', () => {
+        const code = `
+      app.get('/api', [logger, requireAuth, parser], (req, res) => {
+        res.send('ok');
+      });
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(0);
+    });
+
+    test('should not treat check-prefixed middleware as authentication', () => {
+        const code = `
+      app.get('/private', checkInput, (req, res) => {
+        res.send('ok');
+      });
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain('GET /private');
+    });
+
+    test('should flag inline middleware arrays without auth', () => {
+        const code = `
+      app.get('/private', [validateInput, parseBody], (req, res) => {
+        res.send('ok');
+      });
+    `;
+        const findings = analyzer.analyze('app.js', code);
+        expect(findings).toHaveLength(1);
+        expect(findings[0].message).toContain('GET /private');
     });
 
     test('should handle mounted routers with auth', () => {

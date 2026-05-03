@@ -27,16 +27,21 @@ inputs:
 outputs:
   findings-count:
     description: 'Number of security findings'
+    value: ${{ steps.linter.outputs.findings-count }}
   sarif-file:
     description: 'Path to SARIF output file'
+    value: ${{ steps.linter.outputs.sarif-file }}
+  results-file:
+    description: 'Path to the requested output format file'
+    value: ${{ steps.linter.outputs.results-file }}
 
 runs:
   using: 'composite'
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
 
     - name: Install dependencies
       run: npm ci --production
@@ -44,14 +49,15 @@ runs:
       working-directory: ${{ github.action_path }}
 
     - name: Run linter
+      id: linter
       run: node ${{ github.action_path }}/src/action.js
       shell: bash
       env:
         INPUT_PATH: ${{ inputs.path }}
         INPUT_CONFIG: ${{ inputs.config }}
-        INPUT_FAIL-ON-WARNINGS: ${{ inputs.fail-on-warnings }}
-        INPUT_OUTPUT-FORMAT: ${{ inputs.output-format }}
-        INPUT_GITHUB-TOKEN: ${{ inputs.github-token }}
+        INPUT_FAIL_ON_WARNINGS: ${{ inputs.fail-on-warnings }}
+        INPUT_OUTPUT_FORMAT: ${{ inputs.output-format }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
 
 branding:
   icon: 'shield'

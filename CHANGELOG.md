@@ -6,11 +6,15 @@ The IWSPA '26 paper artifact is **v1.4.2**. Releases after that may include
 post-paper maintenance fixes; pin to `npx mcp-security-linter@1.4.2` when
 reproducing the paper's ecosystem scan.
 
-## [1.6.0] - 2026-05-01
+## [1.6.0] - 2026-05-03
 
 This release stabilizes JS/TS analysis, removes vulnerable runtime
-dependencies, and closes implementation gaps in the v1.4.2 sink and
-handler coverage that the IWSPA '26 paper describes.
+dependencies, fixes a long-standing CLI exit-code bug and a broken
+GitHub Action input wiring, and closes implementation gaps in the
+v1.4.2 sink and handler coverage that the IWSPA '26 paper describes.
+
+It is the first post-publication release. The v1.4.2 npm artifact
+remains the paper-pinned version for ecosystem-scan reproducibility.
 
 ### Added
 
@@ -59,6 +63,21 @@ handler coverage that the IWSPA '26 paper describes.
   treating `checkInput`, `checkPayload`, and similar input-validation
   middleware as authentication. This **diverges from paper §5.3**, which
   documents v1.4.2 behavior; the change improves precision.
+- `unauthenticated-endpoint` analyzer now recognizes member-expression
+  middleware inside `app.use(...)`. Previously the `app.use` handler only
+  inspected `Identifier` callees, so common patterns like
+  `app.use(passport.authenticate('jwt'))` were missed and downstream
+  routes were falsely flagged as unauthenticated. The handler now reuses
+  the existing `collectMiddlewareNames()` helper that already covers
+  member-expression callees in route definitions. Locked in by two
+  regression tests (positive: passport; negative: `bodyParser.json()`).
+- `action.yml` composite-action outputs (`findings-count`, `sarif-file`,
+  `results-file`) now propagate to consumers via explicit
+  `value: ${{ steps.linter.outputs.* }}` mappings. Prior to this fix the
+  internal `setOutput` calls wrote to `GITHUB_OUTPUT` correctly, but the
+  composite wrapper did not forward them, so downstream workflows always
+  saw empty strings. Bug existed in v1.4.2 too but was never noticed
+  because no documented consumer referenced these outputs.
 - CLI exits with status `1` whenever findings are present, regardless of
   output format. Previously `--format json` and `--format sarif` exited
   `0` even when error-level findings were emitted, which silently passed
@@ -124,8 +143,34 @@ handler coverage that the IWSPA '26 paper describes.
   unauth-endpoint findings on `dbx-mcp-server` reported in the paper.
   A scoped fix that gates route detection on `express()` / `Router()`
   bindings is planned for v1.6.1.
+- The CLI does not validate the `--format` argument; an unknown value
+  silently falls back to console output. The GitHub Action wrapper does
+  validate. Planned tightening for v1.6.1.
+- The programmatic API (`require('mcp-security-linter')`) is not yet
+  documented in the README. The exported method is
+  `new Linter(config).analyze(path)` and returns `Promise<Finding[]>`.
 - Cross-file and cross-module taint tracking is still out of scope, as
   noted in paper §7.3.
+
+### Validation
+
+- 68/68 unit tests pass (was 60 on v1.5.0).
+- `npm audit`: 0 vulnerabilities.
+- The 5 paper-positive ecosystem repositories at the SHAs listed in
+  `docs/ecosystem-analysis-results.csv` produce identical per-rule
+  finding counts to the paper Table 3:
+  CommandExecution=1, dbx-mcp-server=12, image-worker-mcp=4,
+  influxdb-mcp-server=3, mcp-abap-adt=13.
+- One paper-clean repository (`microsoft/azure-devops-mcp` @ d8b9642,
+  paper Table 3 = 0) now produces 15 token-passthrough WARNINGs after
+  the §7.3 TS-parsing fix. All 15 are legitimate `Bearer ${accessToken}`
+  Authorization-header usage and surface as warnings per the design
+  intent of paper §5.2 ("can be legitimate but still requires review").
+  This is the §7.3 limitation lifting, not a regression.
+- End-to-end real-user simulation: built `npm pack` tarball, installed
+  into a fresh consumer, exercised CLI flags, formats, exit codes,
+  programmatic API, config file discovery, and the GitHub Action
+  composite consumer. All 14 simulated user journeys succeeded.
 
 ## [1.5.0] - 2026
 
